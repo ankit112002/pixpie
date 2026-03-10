@@ -26,25 +26,19 @@ class SurveyMapScreen extends StatefulWidget {
 
 class _SurveyMapScreenState extends State<SurveyMapScreen> {
   GoogleMapController? _controller;
-
   final Set<Polygon> _polygons = {};
   final Set<Marker> _markers = {};
-
   LatLng? _currentLocation;
   StreamSubscription<Position>? _positionStream;
 
   bool _isInsideAoi = false;
-  bool _isCameraMoved = false;
-
   double _currentLatitude = 0.0;
   double _currentLongitude = 0.0;
 
   int _photoCount = 0;
   Map<String, String> _photoPaths = {}; // markerId -> image path
 
-  bool _isManuallyDragged = false;
   bool _isFollowingUser = true;
-
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -52,56 +46,91 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
     super.initState();
     _loadPolygon();
     _startTracking();
-    _loadSavedPhotos(); // 🔥 NEW
-
+    _loadSavedPhotos();
   }
+
+  /// ===============================
+  /// Load saved photos safely
   Future<void> _loadSavedPhotos() async {
     final prefs = await SharedPreferences.getInstance();
     final key = "aoi_${widget.aoi["id"]}_photos";
+    final List<String> saved = prefs.getStringList(key) ?? [];
 
-    List<String> saved = prefs.getStringList(key) ?? [];
+    final Set<Marker> loadedMarkers = {};
+    final Map<String, String> loadedPaths = {};
+
+    debugPrint("Loading saved photos for AOI ${widget.aoi["id"]}, count: ${saved.length}");
 
     for (int i = 0; i < saved.length; i++) {
-      final markerId = "photo_saved_$i";
+      String path = "";
+      double lat = 0.0;
+      double lng = 0.0;
 
-      _markers.add(
+      try {
+        final dynamic data = jsonDecode(saved[i]);
+        debugPrint("Decoded saved[$i]: $data (type: ${data.runtimeType})");
+
+        if (data is Map) {
+          final mapData = Map<String, dynamic>.from(data);
+          path = mapData["photo_url"]?.toString() ?? mapData["path"]?.toString() ?? "";
+          lat = (mapData["lat"] as num?)?.toDouble() ?? 0.0;
+          lng = (mapData["lng"] as num?)?.toDouble() ?? 0.0;
+        } else if (data is String) {
+          path = data;
+          if (_polygons.isNotEmpty) {
+            lat = _polygons.first.points.first.latitude;
+            lng = _polygons.first.points.first.longitude;
+          }
+        } else {
+          debugPrint("Unknown type in saved photo: ${data.runtimeType}");
+        }
+      } catch (e) {
+        // fallback for raw string
+        path = saved[i];
+        debugPrint("Failed to decode saved[$i], fallback to raw string: $path | $e");
+        if (_polygons.isNotEmpty) {
+          lat = _polygons.first.points.first.latitude;
+          lng = _polygons.first.points.first.longitude;
+        }
+      }
+
+      if (path.isEmpty) continue;
+
+      final markerId = "photo_saved_$i";
+      loadedMarkers.add(
         Marker(
           markerId: MarkerId(markerId),
-          position: _currentLocation ?? const LatLng(0, 0),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-              BitmapDescriptor.hueRed),
+          position: LatLng(lat, lng),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           infoWindow: InfoWindow(
             title: "Photo ${i + 1}",
-            onTap: () => _showImagePreview(saved[i]),
+            onTap: () => _showImagePreview(path),
           ),
         ),
       );
 
-      _photoPaths[markerId] = saved[i];
+      loadedPaths[markerId] = path;
     }
 
     setState(() {
-      _photoCount = saved.length;
+      _markers.addAll(loadedMarkers);
+      _photoPaths = loadedPaths;
+      _photoCount = loadedMarkers.length;
     });
+
+    debugPrint("Loaded $_photoCount saved photos successfully");
   }
-  // ===============================
-  // Load AOI Polygon
+  /// ===============================
+  /// Load AOI Polygon
   void _loadPolygon() {
     var geoJson = widget.aoi["boundary_geojson"];
     if (geoJson == null) return;
 
-    // 🔥 If String, decode it
-    if (geoJson is String) {
-      geoJson = jsonDecode(geoJson);
-    }
+    if (geoJson is String) geoJson = jsonDecode(geoJson);
 
     final coordinates = geoJson["coordinates"][0];
-
-    List<LatLng> points = coordinates.map<LatLng>((coord) {
-      return LatLng(
-        (coord[1] as num).toDouble(),
-        (coord[0] as num).toDouble(),
-      );
+    final points = (coordinates as List).map<LatLng>((coord) {
+      return LatLng((coord[1] as num).toDouble(), (coord[0] as num).toDouble());
     }).toList();
 
     setState(() {
@@ -116,6 +145,9 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
       );
     });
   }
+
+  /// ===============================
+  /// Show captured photo
   void _showImagePreview(String path) {
     showModalBottomSheet(
       context: context,
@@ -123,52 +155,58 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
-        return SizedBox(
-          height: 400,
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
-              const Text(
-                "Captured Photo",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+      builder: (_) => SizedBox(
+        height: 400,
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            const Text(
+              "Captured Photo",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: Image.file(
-                  File(path),
-                  fit: BoxFit.cover,
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: path.startsWith("http")
+                  ? Image.network(
+                path,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Center(
+                  child: Text(
+                    "Failed to load image",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
+              )
+                  : Image.file(
+                File(path),
+                fit: BoxFit.cover,
               ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        );
-      },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
     );
   }
-  // ===============================
-  // Start GPS Tracking
-  Future<void> _startTracking() async {
-    bool serviceEnabled;
-    LocationPermission permission;
 
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  /// ===============================
+  /// Start GPS tracking
+  Future<void> _startTracking() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       await Geolocator.openLocationSettings();
       return;
     }
 
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) return;
     }
-
     if (permission == LocationPermission.deniedForever) {
       await Geolocator.openAppSettings();
       return;
@@ -179,55 +217,53 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
         accuracy: LocationAccuracy.high,
         distanceFilter: 2,
       ),
-    ).listen((Position position) {
-
+    ).listen((position) {
       final latLng = LatLng(position.latitude, position.longitude);
-
       _currentLocation = latLng;
       _currentLatitude = position.latitude;
       _currentLongitude = position.longitude;
 
-      // Move camera only first time
       if (_controller != null && _isFollowingUser) {
-        _controller!.animateCamera(
-          CameraUpdate.newLatLngZoom(latLng, 18),
-        );
+        _controller!.animateCamera(CameraUpdate.newLatLngZoom(latLng, 18));
         _isFollowingUser = false;
       }
 
-      if (_polygons.isNotEmpty) {
-        _checkInsidePolygon(latLng);
-      }
+      if (_polygons.isNotEmpty) _checkInsidePolygon(latLng);
     });
   }
-  // ===============================
-  // Check If Inside AOI
+
+  /// ===============================
+  /// Check if inside AOI
+  bool _hasShownOutsideAoiMessage = false;
+
   void _checkInsidePolygon(LatLng point) {
     final polygonPoints = _polygons.first.points;
-
     bool isInside = _isPointInPolygon(point, polygonPoints);
 
-    setState(() {
-      _isInsideAoi = isInside;
-    });
-
-    if (!isInside) {
+    // Only show message if user just exited the AOI
+    if (!isInside && !_hasShownOutsideAoiMessage) {
+      _hasShownOutsideAoiMessage = true;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("⚠ You are outside assigned AOI!"),
           backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
         ),
       );
     }
+
+    // Reset flag when user comes back inside
+    if (isInside) {
+      _hasShownOutsideAoiMessage = false;
+    }
+
+    setState(() => _isInsideAoi = isInside);
   }
 
-  // Ray Casting Algorithm
   bool _isPointInPolygon(LatLng point, List<LatLng> polygon) {
     int intersectCount = 0;
-
     for (int j = 0; j < polygon.length - 1; j++) {
-      if (((polygon[j].latitude > point.latitude) !=
-          (polygon[j + 1].latitude > point.latitude)) &&
+      if (((polygon[j].latitude > point.latitude) != (polygon[j + 1].latitude > point.latitude)) &&
           (point.longitude <
               (polygon[j + 1].longitude - polygon[j].longitude) *
                   (point.latitude - polygon[j].latitude) /
@@ -236,11 +272,11 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
         intersectCount++;
       }
     }
-
     return (intersectCount % 2) == 1;
   }
 
-  // ===============================
+  /// ===============================
+  /// Capture photo safely
   Future<void> _capturePhoto() async {
     if (!_isInsideAoi) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -256,89 +292,114 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
       source: ImageSource.camera,
       imageQuality: 80,
     );
-
     if (photo == null) return;
 
-    try {
-      final provider = context.read<AoiProvider>();
+    final provider = context.read<AoiProvider>();
 
+    if (!await File(photo.path).exists()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Uploading photo...")),
+        const SnackBar(
+          content: Text("Captured file does not exist"),
+          backgroundColor: Colors.red,
+        ),
       );
+      return;
+    }
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Uploading photo...")),
+    );
+
+    try {
+      // Upload photo
       await provider.uploadPhoto(
         filePath: photo.path,
-        aoiId: widget.aoi["id"],       // String UUID
-        latitude: _currentLatitude.toString(),    // double
-        longitude: _currentLongitude.toString(),  // double
+        aoiId: widget.aoi["id"],
+        latitude: _currentLatitude.toString(),
+        longitude: _currentLongitude.toString(),
       );
 
-      if (provider.error != null) {
-        throw provider.error!;
-      }
+      if (provider.error != null) throw provider.error!;
 
-      // ✅ Increase photo count
       _photoCount++;
 
-      final markerId =
-          "photo_${DateTime.now().millisecondsSinceEpoch}";
+      // ✅ Use the **latest upload response** safely
+      String uploadedUrl = photo.path; // fallback local path
+      if (provider.myPhotos.isNotEmpty) {
+        // Try to find the photo with the **same file size or timestamp** if possible
+        final Map<String, dynamic>? lastUploaded = provider.myPhotos.lastWhere(
+              (p) =>
+          p is Map &&
+              p["aoi_id"] == widget.aoi["id"] &&
+              (p["latitude"]?.toString() == _currentLatitude.toString() &&
+                  p["longitude"]?.toString() == _currentLongitude.toString()),
+          orElse: () => null,
+        ) as Map<String, dynamic>?;
 
-      final photoPosition =
-      LatLng(_currentLatitude, _currentLongitude);
+        if (lastUploaded != null && lastUploaded["photo_url"] != null) {
+          uploadedUrl = lastUploaded["photo_url"].toString();
+        }
+      }
 
-      // ✅ Add photo marker
+      final markerId = "photo_${DateTime.now().millisecondsSinceEpoch}";
+      final photoPosition = LatLng(_currentLatitude, _currentLongitude);
+
       setState(() {
         _markers.add(
           Marker(
             markerId: MarkerId(markerId),
             position: photoPosition,
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueRed),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
             infoWindow: InfoWindow(
               title: "Photo $_photoCount",
-              onTap: () => _showImagePreview(photo.path),
+              onTap: () => _showImagePreview(uploadedUrl),
             ),
           ),
         );
-
-        _photoPaths[markerId] = photo.path;
+        _photoPaths[markerId] = uploadedUrl;
       });
 
-      await _savePhotoLocally(photo.path);
+      await _savePhotoLocally(uploadedUrl, photoPosition);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Photo $_photoCount uploaded successfully ✅"),
-        ),
+        SnackBar(content: Text("Photo $_photoCount uploaded successfully ✅")),
       );
     } catch (e) {
+      debugPrint("Photo upload failed safely: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Upload failed: $e"),
+          content: Text("Photo upload failed: $e"),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
-
-  Future<void> _savePhotoLocally(String path) async {
+  /// ===============================
+  /// Save photo locally safely
+  Future<void> _savePhotoLocally(String path, LatLng position) async {
     final prefs = await SharedPreferences.getInstance();
     final key = "aoi_${widget.aoi["id"]}_photos";
 
     List<String> existing = prefs.getStringList(key) ?? [];
-    existing.add(path);
+    final photoData = jsonEncode({
+      "path": path,
+      "lat": position.latitude,
+      "lng": position.longitude,
+      "timestamp": DateTime.now().toIso8601String(),
+    });
 
+    existing.add(photoData);
     await prefs.setStringList(key, existing);
   }
 
-  // ===============================
   @override
   void dispose() {
     _positionStream?.cancel();
     super.dispose();
   }
 
-  // ===============================
+  /// ===============================
+  /// Build UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -347,9 +408,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
         children: [
           GoogleMap(
             initialCameraPosition: CameraPosition(
-              target: _polygons.isNotEmpty
-                  ? _polygons.first.points.first
-                  : const LatLng(0, 0),
+              target: _polygons.isNotEmpty ? _polygons.first.points.first : const LatLng(0, 0),
               zoom: 15,
             ),
             polygons: _polygons,
@@ -357,40 +416,30 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
+            onCameraMove: (pos) {
+              final center = pos.target;
+              _currentLocation = center;
+              _currentLatitude = center.latitude;
+              _currentLongitude = center.longitude;
 
-            onCameraMove: (CameraPosition position) {
-              final center = position.target;
+              _markers.removeWhere((m) => m.markerId.value == "user_location");
+              _markers.add(
+                Marker(
+                  markerId: const MarkerId("user_location"),
+                  position: center,
+                  icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+                ),
+              );
 
-              setState(() {
-                _currentLocation = center;
-                _currentLatitude = center.latitude;
-                _currentLongitude = center.longitude;
-
-                _markers.removeWhere(
-                        (m) => m.markerId.value == "user_location");
-
-                _markers.add(
-                  Marker(
-                    markerId: const MarkerId("user_location"),
-                    position: center,
-                    icon: BitmapDescriptor.defaultMarkerWithHue(
-                        BitmapDescriptor.hueAzure),
-                  ),
-                );
-              });
-
-              if (_polygons.isNotEmpty) {
-                _checkInsidePolygon(center);
-              }
+              if (_polygons.isNotEmpty) _checkInsidePolygon(center);
             },
-
-            onMapCreated: (controller) {
+            onMapCreated: (controller) async {
               _controller = controller;
+              await _loadSavedPhotos();
             },
           ),
-
           Positioned(
-            bottom: 30,
+            bottom: 60,
             left: 24,
             right: 24,
             child: GestureDetector(
@@ -408,11 +457,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
                 child: const Center(
                   child: Text(
                     "Capture Survey Photo",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                 ),
               ),
@@ -422,39 +467,12 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
             top: 20,
             right: 20,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(20),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(20)),
               child: Text(
                 "Photos: $_photoCount",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
-            ),
-          ),
-          Positioned(
-            bottom: 110,
-            right: 20,
-            child: FloatingActionButton(
-              mini: true,
-              onPressed: () {
-                setState(() {
-                  _isFollowingUser = true;
-                  _isManuallyDragged = false; // restore GPS control
-                });
-
-                if (_currentLocation != null) {
-                  _controller?.animateCamera(
-                    CameraUpdate.newLatLngZoom(_currentLocation!, 18),
-                  );
-                }
-              },
-              child: const Icon(Icons.my_location),
             ),
           ),
         ],

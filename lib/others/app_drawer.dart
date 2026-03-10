@@ -27,6 +27,7 @@ class _AppDrawerState extends State<AppDrawer> {
   @override
   Widget build(BuildContext context) {
     return Drawer(
+
       child: Column(
         children: [
 
@@ -158,29 +159,30 @@ class _AppDrawerState extends State<AppDrawer> {
             icon: Icons.logout,
             title: "Sign Out",
             color: Colors.red.shade700,
-            onTap: () async {
-              final shouldLogout = await showDialog<bool>(
-                context: context,
-                builder: (_) => AlertDialog(
-                  title: const Text("Confirm Logout"),
-                  content: const Text("Are you sure you want to sign out?"),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text("Cancel"),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: const Text("Logout"),
-                    ),
-                  ],
-                ),
-              );
+              onTap: () async {
 
-              if (shouldLogout ?? false) {
-                await _logoutAndNavigate();
+                final shouldLogout = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text("Confirm Logout"),
+                    content: const Text("Are you sure you want to sign out?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text("Cancel"),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text("Logout"),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (shouldLogout == true) {
+                  await _logoutAndNavigate();
+                }
               }
-            },
           ),
 
           const SizedBox(height: 30),

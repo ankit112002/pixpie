@@ -26,9 +26,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Home", style: TextStyle(color: Colors.white)),
+        title: const Text(
+          "Home",
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.deepPurple,
         elevation: 4,
+        iconTheme: const IconThemeData(
+          color: Colors.white, // 🔹 Change this to your desired color
+        ),
       ),
       drawer: const AppDrawer(), // <-- Use your real drawer here
 
@@ -118,7 +124,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           screenWidth,
                         ),
                         _buildProfessionalSummaryCard(
-                          "Today's Earnings",
+                          "PixPoint",
                           "₹$todaysEarnings",
                           Icons.currency_rupee,
                           Colors.pink,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pixpie/others/kyc_screen.dart';
 import 'package:pixpie/screens/admin_login.dart';
 import 'package:pixpie/screens/aoi_management.dart';
 import 'package:provider/provider.dart';
@@ -200,7 +201,7 @@ class _AdminSignupState extends State<AdminSignup> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const DashboardScreen(),
+                          builder: (context) => const KycScreen(),
                         ),
                       );
                     }

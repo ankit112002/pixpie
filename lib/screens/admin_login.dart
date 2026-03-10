@@ -3,6 +3,8 @@ import 'package:pixpie/dashboard/admin_dashboard/dashboard.dart';
 import 'package:pixpie/screens/admin_signup.dart';
 import 'package:pixpie/screens/aoi_management.dart';
 import 'package:provider/provider.dart';
+import '../others/kyc_screen.dart';
+import '../others/kyc_status_screen.dart';
 import '../provider/api_provider.dart';
 
 class AdminLogin extends StatefulWidget {
@@ -125,21 +127,70 @@ class _AdminLoginState extends State<AdminLogin> {
 
     return true;
   }
-
   void _handleLogin(ApiProvider apiProvider) async {
-    if (!_validateInputs()) return; // ✅ Validate first
+
+    if (!_validateInputs()) return;
 
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
-    await apiProvider.loginAdmin(email: email, password: password);
+    await apiProvider.loginAdmin(
+      email: email,
+      password: password,
+    );
 
-    if (apiProvider.error == null && apiProvider.data != null) {
+    if (apiProvider.error != null) {
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiProvider.error!)),
+      );
+      return;
+    }
+
+    await apiProvider.fetchKycStatus();
+
+    if (!mounted) return;
+
+    final status = apiProvider.kycStatus;
+
+    /// ✅ Approved
+    if (status == "APPROVED") {
+
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
-    } else if (apiProvider.error != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(apiProvider.error!)));
+        context,
+        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+      );
+
+    }
+
+    /// ⏳ Under Review
+    else if (status == "SUBMITTED") {
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const KycStatusScreen()),
+      );
+
+    }
+
+    /// ❌ Rejected
+    else if (status == "REJECTED") {
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const KycStatusScreen()),
+      );
+
+    }
+
+    /// 🆕 Not submitted (PENDING)
+    else {
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const KycScreen()),
+      );
+
     }
   }
   @override

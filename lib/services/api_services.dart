@@ -311,7 +311,101 @@ class ApiServices {
     final response = await http.delete(url, headers: headers);
     return await _handleResponse(response);
   }
+  // ==============================
+// 📄 UPLOAD KYC DOCUMENT
+// ==============================
+  Future<Map<String, dynamic>> uploadKycDocument({
+    required String filePath,
+    required String type,
+  }) async {
+    final url = Uri.parse("https://pixpe-backend.onrender.com/surveyor/kyc/upload");
+
+    final headers = await _getAuthHeaders();
+
+    var request = http.MultipartRequest("POST", url);
+    request.headers.addAll(headers);
+
+    // Add type field
+    request.fields["type"] = type;
+
+    // Add file
+    request.files.add(
+      await http.MultipartFile.fromPath("file", filePath),
+    );
+
+    final response = await request.send();
+    final responseBody = await http.Response.fromStream(response);
+
+    return await _handleResponse(responseBody);
+  }
+
+  // ==============================
+// 🪪 SUBMIT KYC DETAILS
+// ==============================
+  Future<Map<String, dynamic>> submitKyc({
+    required String fullName,
+    required String dateOfBirth,
+    required String address,
+    required String city,
+    required String state,
+    required String pinCode,
+    required String documentType,
+    required String documentNumber,
+    required String documentFrontUrl,
+    required String documentBackUrl,
+    required String selfieUrl,
+    required String bankAccountNumber,
+    required String ifscCode,
+    required String bankProofUrl,
+  }) async {
+
+    final url = Uri.parse(
+      "https://pixpe-backend.onrender.com/surveyor/kyc",
+    );
+
+    final headers = await _getAuthHeaders();
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: jsonEncode({
+        "full_name": fullName,
+        "date_of_birth": dateOfBirth,
+        "address": address,
+        "city": city,
+        "state": state,
+        "pin_code": pinCode,
+        "document_type": documentType,
+        "document_number": documentNumber,
+        "document_front_url": documentFrontUrl,
+        "document_back_url": documentBackUrl,
+        "selfie_url": selfieUrl,
+        "bank_account_number": bankAccountNumber,
+        "ifsc_code": ifscCode,
+        "bank_proof_url": bankProofUrl,
+      }),
+    );
+
+    return await _handleResponse(response);
+  }
+
+  /// ===============================
+  /// 📄 GET KYC STATUS
+  /// ===============================
+  Future<Map<String, dynamic>> getKycStatus() async {
+
+    final url = Uri.parse(
+      "https://pixpe-backend.onrender.com/surveyor/kyc/status",
+    );
+
+    final headers = await _getAuthHeaders();
+
+    final response = await http.get(url, headers: headers);
+
+    return await _handleResponse(response);
+  }
 }
+
 
 // ==============================
 // 🔥 SESSION EXCEPTION CLASS
