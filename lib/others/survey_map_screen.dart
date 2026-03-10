@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../provider/aoi_provider.dart';
+import 'image_crop_screen.dart';
 
 class SurveyMapScreen extends StatefulWidget {
   final Map<String, dynamic> aoi;
@@ -290,13 +293,14 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
 
     final XFile? photo = await _picker.pickImage(
       source: ImageSource.camera,
-      imageQuality: 80,
+      imageQuality: 100,
     );
+
     if (photo == null) return;
 
-    final provider = context.read<AoiProvider>();
+    File originalFile = File(photo.path);
 
-    if (!await File(photo.path).exists()) {
+    if (!await originalFile.exists()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Captured file does not exist"),
@@ -306,14 +310,39 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Uploading photo...")),
-    );
-
     try {
-      // Upload photo
+      /// ===============================
+      /// OPEN CROP SCREEN
+      Uint8List imageBytes = await originalFile.readAsBytes();
+
+      Uint8List? croppedImage = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ImageCropScreen(imageData: imageBytes),
+        ),
+      );
+
+      if (croppedImage == null) return;
+
+      /// ===============================
+      /// SAVE CROPPED FILE
+      final croppedFile = File('${photo.path}_cropped.jpg');
+      await croppedFile.writeAsBytes(croppedImage);
+
+      /// ===============================
+      /// COMPRESS IMAGE
+      File compressedFile = await _compressImage(croppedFile);
+
+      /// ===============================
+      /// START UPLOAD
+      final provider = context.read<AoiProvider>();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Uploading photo...")),
+      );
+
       await provider.uploadPhoto(
-        filePath: photo.path,
+        filePath: compressedFile.path,
         aoiId: widget.aoi["id"],
         latitude: _currentLatitude.toString(),
         longitude: _currentLongitude.toString(),
@@ -323,16 +352,18 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
 
       _photoCount++;
 
-      // ✅ Use the **latest upload response** safely
-      String uploadedUrl = photo.path; // fallback local path
+      /// ===============================
+      /// GET UPLOADED URL
+      String uploadedUrl = compressedFile.path;
+
       if (provider.myPhotos.isNotEmpty) {
-        // Try to find the photo with the **same file size or timestamp** if possible
         final Map<String, dynamic>? lastUploaded = provider.myPhotos.lastWhere(
               (p) =>
           p is Map &&
               p["aoi_id"] == widget.aoi["id"] &&
               (p["latitude"]?.toString() == _currentLatitude.toString() &&
-                  p["longitude"]?.toString() == _currentLongitude.toString()),
+                  p["longitude"]?.toString() ==
+                      _currentLongitude.toString()),
           orElse: () => null,
         ) as Map<String, dynamic>?;
 
@@ -341,6 +372,8 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
         }
       }
 
+      /// ===============================
+      /// ADD MARKER
       final markerId = "photo_${DateTime.now().millisecondsSinceEpoch}";
       final photoPosition = LatLng(_currentLatitude, _currentLongitude);
 
@@ -349,23 +382,31 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
           Marker(
             markerId: MarkerId(markerId),
             position: photoPosition,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueRed,
+            ),
             infoWindow: InfoWindow(
               title: "Photo $_photoCount",
               onTap: () => _showImagePreview(uploadedUrl),
             ),
           ),
         );
+
         _photoPaths[markerId] = uploadedUrl;
       });
 
+      /// ===============================
+      /// SAVE LOCALLY
       await _savePhotoLocally(uploadedUrl, photoPosition);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Photo $_photoCount uploaded successfully ✅")),
+        SnackBar(
+          content: Text("Photo $_photoCount uploaded successfully ✅"),
+        ),
       );
     } catch (e) {
       debugPrint("Photo upload failed safely: $e");
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Photo upload failed: $e"),
@@ -456,7 +497,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
                 ),
                 child: const Center(
                   child: Text(
-                    "Capture Survey Photo",
+                    "Capture Photo",
                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                 ),
@@ -475,8 +516,60 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
               ),
             ),
           ),
+          Positioned(
+            bottom: 140,
+            right: 20,
+            child: FloatingActionButton(
+              backgroundColor: Colors.white,
+              onPressed: _goToCurrentLocation,
+              child: const Icon(
+                Icons.my_location,
+                color: Colors.blue,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+  void _goToCurrentLocation() async {
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      LatLng current = LatLng(position.latitude, position.longitude);
+
+      _controller?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: current,
+            zoom: 18,
+          ),
+        ),
+      );
+
+      setState(() {
+        _currentLatitude = position.latitude;
+        _currentLongitude = position.longitude;
+        _currentLocation = current;
+      });
+    } catch (e) {
+      debugPrint("Location error: $e");
+    }
+  }
+  Future<File> _compressImage(File file) async {
+    final result = await FlutterImageCompress.compressWithFile(
+      file.absolute.path,
+      quality: 70,
+      minWidth: 1080,
+      minHeight: 1080,
+    );
+
+    final compressedFile =
+    File('${file.path}_compressed.jpg')..writeAsBytesSync(result!);
+
+    return compressedFile;
+  }
 }
+

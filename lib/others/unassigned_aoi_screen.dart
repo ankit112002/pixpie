@@ -391,6 +391,9 @@ class _UnassignedAoiScreenState
                     double.infinity,
                     child:
                     ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green
+                      ),
                       onPressed:
                       provider
                           .isLoading
@@ -436,9 +439,10 @@ class _UnassignedAoiScreenState
                         ),
                       )
                           : const Text(
-                          "Submit Request"),
+                          "Submit Request",style: TextStyle(color: Colors.white),),
                     ),
                   ),
+                  SizedBox(height: 50,)
                 ],
               );
             },

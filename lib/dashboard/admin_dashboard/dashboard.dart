@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pixpie/others/aoi_screen.dart';
+import 'package:pixpie/others/unassigned_aoi_screen.dart';
 import 'package:provider/provider.dart';
 import '../../others/app_drawer.dart';
 import '../../provider/api_provider.dart';
@@ -60,8 +61,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           final activeCount = aois.length;
           final photosToday = 0;
-          final completedCount = 1;
           final todaysEarnings = 0;
+
+          /// Count completed AOIs dynamically
+          final completedCount = aois
+              .where((aoi) =>
+          aoi != null &&
+              aoi is Map<String, dynamic> &&
+              (aoi["status"]?.toString().toUpperCase() == "COMPLETED"))
+              .length;
 
           String surveyorName = "Surveyor";
 
@@ -72,9 +80,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 aois[0]["assigned_to_surveyor"]["name"].toString();
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+          return RefreshIndicator(
+              onRefresh: () async {
+                await Provider.of<ApiProvider>(context, listen: false).getAoi();
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -149,25 +162,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Row(
                       children: [
-                        InkWell(
+                        _buildProfessionalActionCard(
+                          "View Assigned \n          AOIs",
+                          Icons.map,
+                          screenWidth,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => AOIScreen(),
+                                builder: (context) => const AOIScreen(),
                               ),
                             );
                           },
-                          child: _buildProfessionalActionCard(
-                            "View AOIs",
-                            Icons.map,
-                            screenWidth,
-                          ),
                         ),
+
                         _buildProfessionalActionCard(
-                          "Quick Capture",
-                          Icons.camera_alt,
+                          "View UnAssigned\n          AOIs",
+                          Icons.map,
                           screenWidth,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const UnassignedAoiScreen(),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -258,6 +278,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
+          ),
           );
         },
       ),
@@ -330,19 +351,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ----------------- Professional Action Card -----------------
   Widget _buildProfessionalActionCard(
-    String title,
-    IconData icon,
-    double screenWidth,
-  ) {
+      String title,
+      IconData icon,
+      double screenWidth, {
+        VoidCallback? onTap,
+      }) {
     return SizedBox(
       width: screenWidth * 0.45,
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 4,
         child: InkWell(
-          onTap: () {
-            // Handle action
-          },
+          onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 28),

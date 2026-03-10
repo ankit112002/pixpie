@@ -99,7 +99,7 @@ class _AOIScreenState extends State<AOIScreen> {
             return Center(child: Text(apiProvider.error!));
           }
 
-          final aoiList = apiProvider.data ?? [];
+          final List<dynamic> aoiList = apiProvider.data ?? [];
 
           if (aoiList.isEmpty) {
             return const Center(
@@ -117,21 +117,30 @@ class _AOIScreenState extends State<AOIScreen> {
               itemCount: aoiList.length,
               itemBuilder: (context, index) {
                 final raw = aoiList[index];
+
                 if (raw == null || raw is! Map<String, dynamic>) {
                   return const SizedBox();
                 }
 
                 final Map<String, dynamic> aoi = raw;
-                final aoiName = aoi["aoi_name"]?.toString() ?? "Unnamed AOI";
-                final status = aoi["status"]?.toString() ?? "unknown";
-                final priority = aoi["priority"]?.toString() ?? "MEDIUM";
+
+                final String aoiName = aoi["aoi_name"]?.toString() ?? "Unnamed AOI";
+                final String status = aoi["status"]?.toString() ?? "UNKNOWN";
+                final String priority = aoi["priority"]?.toString() ?? "MEDIUM";
+
+                /// API has boundary_geojson
+                final Map<String, dynamic>? boundaryGeoJson =
+                aoi["boundary_geojson"] as Map<String, dynamic>?;
+
+                final List coordinates =
+                    boundaryGeoJson?["coordinates"] ?? [];
+
+                final int boundaryPoints =
+                coordinates.isNotEmpty ? coordinates[0].length : 0;
+
+                /// POIs (optional)
                 final List<Map<String, dynamic>> pois =
                     (aoi["pois"] as List?)
-                        ?.map((e) => Map<String, dynamic>.from(e))
-                        .toList() ??
-                        [];
-                final List<Map<String, dynamic>> boundaryCoordinates =
-                    (aoi["boundary_coordinates"] as List?)
                         ?.map((e) => Map<String, dynamic>.from(e))
                         .toList() ??
                         [];
@@ -142,10 +151,7 @@ class _AOIScreenState extends State<AOIScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => AoiDetailScreen(
-                          aoi: {
-                            ...aoi,
-                            "boundary_coordinates": boundaryCoordinates,
-                          },
+                          aoi: aoi,
                           pois: pois,
                         ),
                       ),
@@ -156,20 +162,20 @@ class _AOIScreenState extends State<AOIScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
                           color: Colors.black12,
                           blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          offset: Offset(0, 4),
                         ),
                       ],
                     ),
                     child: Row(
                       children: [
-                        /// 🔹 Status Accent Bar
+                        /// STATUS BAR
                         Container(
                           width: 6,
-                          height: 100,
+                          height: 110,
                           decoration: BoxDecoration(
                             color: _getStatusColor(status),
                             borderRadius: const BorderRadius.only(
@@ -178,13 +184,15 @@ class _AOIScreenState extends State<AOIScreen> {
                             ),
                           ),
                         ),
+
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(20),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                /// AOI Title
+
+                                /// AOI NAME
                                 Text(
                                   aoiName,
                                   style: const TextStyle(
@@ -193,9 +201,10 @@ class _AOIScreenState extends State<AOIScreen> {
                                     letterSpacing: 0.3,
                                   ),
                                 ),
+
                                 const SizedBox(height: 12),
 
-                                /// Summary row
+                                /// SUMMARY
                                 Row(
                                   children: [
                                     Row(
@@ -206,7 +215,8 @@ class _AOIScreenState extends State<AOIScreen> {
                                         Text(
                                           "${pois.length} POIs",
                                           style: const TextStyle(
-                                              fontSize: 13, color: Colors.grey),
+                                              fontSize: 13,
+                                              color: Colors.grey),
                                         ),
                                       ],
                                     ),
@@ -217,19 +227,23 @@ class _AOIScreenState extends State<AOIScreen> {
                                             size: 18, color: Colors.grey),
                                         const SizedBox(width: 4),
                                         Text(
-                                          "${boundaryCoordinates.length} Boundary Points",
+                                          "$boundaryPoints Boundary Points",
                                           style: const TextStyle(
-                                              fontSize: 13, color: Colors.grey),
+                                              fontSize: 13,
+                                              color: Colors.grey),
                                         ),
                                       ],
                                     ),
                                   ],
                                 ),
+
                                 const SizedBox(height: 12),
 
-                                /// Status & Priority Chips
+                                /// STATUS + PRIORITY
                                 Row(
                                   children: [
+
+                                    /// STATUS
                                     Chip(
                                       backgroundColor:
                                       _getStatusColor(status).withOpacity(0.1),
@@ -249,10 +263,13 @@ class _AOIScreenState extends State<AOIScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 8, vertical: 4),
                                     ),
+
                                     const SizedBox(width: 12),
+
+                                    /// PRIORITY
                                     Chip(
-                                      backgroundColor:
-                                      _getPriorityColor(priority).withOpacity(0.1),
+                                      backgroundColor: _getPriorityColor(priority)
+                                          .withOpacity(0.1),
                                       avatar: Icon(
                                         _getPriorityIcon(priority),
                                         size: 18,
@@ -283,7 +300,7 @@ class _AOIScreenState extends State<AOIScreen> {
             ),
           );
         },
-      ),
+      )
     );
   }
 }
