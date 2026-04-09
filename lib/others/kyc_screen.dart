@@ -6,10 +6,10 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:http/http.dart' as http;
+import 'package:pixpie/dashboard/admin_dashboard/dashboard.dart';
 import 'package:provider/provider.dart';
 
 import '../provider/api_provider.dart';
-import 'kyc_status_screen.dart';
 
 class KycScreen extends StatefulWidget {
   const KycScreen({super.key});
@@ -19,7 +19,6 @@ class KycScreen extends StatefulWidget {
 }
 
 class _KycScreenState extends State<KycScreen> {
-
   int currentStep = 0;
 
   final fullName = TextEditingController();
@@ -51,24 +50,36 @@ class _KycScreenState extends State<KycScreen> {
     filter: {"#": RegExp(r'[0-9]')},
   );
 
+  // ================= IMAGE PICK =================
   Future<File?> pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.camera);
+
+    final picked = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 60, // 🔥 reduce size at source
+      maxWidth: 1024,
+      maxHeight: 1024,
+    );
+
     if (picked == null) return null;
     return File(picked.path);
   }
 
+  // ================= COMPRESS =================
   Future<File> compressImage(File file) async {
     final result = await FlutterImageCompress.compressAndGetFile(
       file.path,
       "${file.path}_compressed.jpg",
-      quality: 70,
+      quality: 50, // 🔥 aggressive compression
+      minWidth: 800,
+      minHeight: 800,
     );
+
     return File(result!.path);
   }
 
+  // ================= UPLOAD =================
   Future<String?> uploadImage(File file, String type) async {
-
     final api = context.read<ApiProvider>();
 
     await api.uploadKycDocument(
@@ -77,15 +88,12 @@ class _KycScreenState extends State<KycScreen> {
     );
 
     if (api.error != null) {
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(api.error!)),
       );
-
       return null;
     }
 
-    /// Get latest uploaded URL
     if (api.uploadedKycUrls.isNotEmpty) {
       return api.uploadedKycUrls.last;
     }
@@ -93,29 +101,27 @@ class _KycScreenState extends State<KycScreen> {
     return null;
   }
 
+  // ================= BANK FETCH =================
   Future<String?> fetchBankName(String code) async {
-
     final url = Uri.parse("https://ifsc.razorpay.com/$code");
 
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
-
       final data = jsonDecode(response.body);
-
       return data["BANK"];
     }
 
     return null;
   }
 
+  // ================= UI CARD =================
   Widget uploadCard(String title, File? image, VoidCallback onTap) {
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 110,
-        width: double.maxFinite,
+        width: double.infinity,
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
@@ -139,8 +145,8 @@ class _KycScreenState extends State<KycScreen> {
     );
   }
 
+  // ================= SUBMIT =================
   Future<void> submitKyc() async {
-
     final api = context.read<ApiProvider>();
 
     bool success = await api.submitKyc(
@@ -163,33 +169,45 @@ class _KycScreenState extends State<KycScreen> {
     if (!mounted) return;
 
     if (success) {
-
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => const KycStatusScreen(),
-        ),
+        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+            (route) => false,
       );
-
     } else {
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("KYC Submission Failed")),
       );
-
     }
   }
 
+  // ================= COMMON PICK + UPLOAD =================
+  Future<void> handleImageUpload({
+    required Function(File) setImage,
+    required Function(String) setUrl,
+    required String type,
+  }) async {
+    final file = await pickImage();
+    if (file == null) return;
+
+    final compressed = await compressImage(file);
+
+    setState(() => setImage(compressed));
+
+    final url = await uploadImage(compressed, type);
+
+    if (url != null) {
+      setUrl(url);
+    }
+  }
+
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(title: const Text("Complete Your KYC")),
-
       body: Stepper(
-
         currentStep: currentStep,
-
         onStepContinue: () {
           if (currentStep < 2) {
             setState(() => currentStep++);
@@ -197,27 +215,18 @@ class _KycScreenState extends State<KycScreen> {
             submitKyc();
           }
         },
-
         onStepCancel: () {
           if (currentStep > 0) {
             setState(() => currentStep--);
           }
         },
-
         steps: [
-
-          /// STEP 1 PERSONAL
+          /// STEP 1
           Step(
             title: const Text("Personal"),
-
             content: Column(
               children: [
-
-                TextField(
-                  controller: fullName,
-                  decoration: const InputDecoration(labelText: "Full Name"),
-                ),
-
+                TextField(controller: fullName, decoration: const InputDecoration(labelText: "Full Name")),
                 TextField(
                   controller: dob,
                   readOnly: true,
@@ -226,7 +235,6 @@ class _KycScreenState extends State<KycScreen> {
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.calendar_today),
                       onPressed: () async {
-
                         DateTime? pickedDate = await showDatePicker(
                           context: context,
                           initialDate: DateTime(2000),
@@ -235,48 +243,26 @@ class _KycScreenState extends State<KycScreen> {
                         );
 
                         if (pickedDate != null) {
-
-                          String formattedDate =
-                              "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
-
-                          dob.text = formattedDate;
+                          dob.text =
+                          "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
                         }
-
                       },
                     ),
                   ),
                 ),
-
-                TextField(
-                  controller: address,
-                  decoration: const InputDecoration(labelText: "Address"),
-                ),
-
-                TextField(
-                  controller: city,
-                  decoration: const InputDecoration(labelText: "City"),
-                ),
-
-                TextField(
-                  controller: state,
-                  decoration: const InputDecoration(labelText: "State"),
-                ),
-
-                TextField(
-                  controller: pin,
-                  decoration: const InputDecoration(labelText: "Pin Code"),
-                ),
+                TextField(controller: address, decoration: const InputDecoration(labelText: "Address")),
+                TextField(controller: city, decoration: const InputDecoration(labelText: "City")),
+                TextField(controller: state, decoration: const InputDecoration(labelText: "State")),
+                TextField(controller: pin, decoration: const InputDecoration(labelText: "Pin Code")),
               ],
             ),
           ),
 
-          /// STEP 2 DOCUMENT
+          /// STEP 2
           Step(
             title: const Text("Documents"),
-
             content: Column(
               children: [
-
                 DropdownButtonFormField(
                   value: documentType,
                   items: const [
@@ -285,135 +271,69 @@ class _KycScreenState extends State<KycScreen> {
                   ],
                   onChanged: (v) => setState(() => documentType = v!),
                 ),
-
                 TextField(
                   controller: documentNumber,
                   inputFormatters: [aadhaarMask],
                   keyboardType: TextInputType.number,
-                  decoration:
-                  const InputDecoration(labelText: "Document Number"),
+                  decoration: const InputDecoration(labelText: "Document Number"),
                 ),
 
-                uploadCard(
-                  "Upload Front",
-                  frontImage,
-                      () async {
+                uploadCard("Upload Front", frontImage, () {
+                  handleImageUpload(
+                    setImage: (f) => frontImage = f,
+                    setUrl: (u) => frontUrl = u,
+                    type: "front",
+                  );
+                }),
 
-                    final file = await pickImage();
-                    if (file == null) return;
+                uploadCard("Upload Back", backImage, () {
+                  handleImageUpload(
+                    setImage: (f) => backImage = f,
+                    setUrl: (u) => backUrl = u,
+                    type: "back",
+                  );
+                }),
 
-                    setState(() => frontImage = file);
-
-                    final url = await uploadImage(file, "front");
-
-                    if (url != null) {
-                      frontUrl = url;
-                    }
-
-                  },
-                ),
-
-                uploadCard(
-                  "Upload Back",
-                  backImage,
-                      () async {
-
-                    final file = await pickImage();
-                    if (file == null) return;
-
-                    setState(() => backImage = file);
-
-                    final url = await uploadImage(file, "back");
-
-                    if (url != null) {
-                      backUrl = url;
-                    }
-
-                  },
-                ),
-
-                uploadCard(
-                  "Upload Selfie",
-                  selfieImage,
-                      () async {
-
-                    final file = await pickImage();
-                    if (file == null) return;
-
-                    setState(() => selfieImage = file);
-
-                    final url = await uploadImage(file, "selfie");
-
-                    if (url != null) {
-                      selfieUrl = url;
-                    }
-
-                  },
-                ),
-
+                uploadCard("Upload Selfie", selfieImage, () {
+                  handleImageUpload(
+                    setImage: (f) => selfieImage = f,
+                    setUrl: (u) => selfieUrl = u,
+                    type: "selfie",
+                  );
+                }),
               ],
             ),
           ),
 
-          /// STEP 3 BANK
+          /// STEP 3
           Step(
             title: const Text("Bank"),
-
             content: Column(
               children: [
-
-                TextField(
-                  controller: accountNumber,
-                  decoration:
-                  const InputDecoration(labelText: "Account Number"),
-                ),
-
+                TextField(controller: accountNumber, decoration: const InputDecoration(labelText: "Account Number")),
                 TextField(
                   controller: ifsc,
                   decoration: const InputDecoration(labelText: "IFSC Code"),
-
                   onChanged: (value) async {
-
                     if (value.length == 11) {
-
                       final bank = await fetchBankName(value);
-
-                      if (bank != null) {
-                        setState(() => bankName = bank);
-                      }
+                      if (bank != null) setState(() => bankName = bank);
                     }
                   },
                 ),
-
                 if (bankName.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      "Bank: $bankName",
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    child: Text("Bank: $bankName", style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
 
-                const SizedBox(height: 10),
-
-                uploadCard(
-                  "Upload Bank Proof",
-                  bankProofImage,
-                      () async {
-
-                    final file = await pickImage();
-                    if (file == null) return;
-
-                    setState(() => bankProofImage = file);
-
-                    final url = await uploadImage(file, "bank_proof");
-
-                    if (url != null) {
-                      bankProofUrl = url;
-                    }
-
-                  },
-                ),
+                uploadCard("Upload Bank Proof", bankProofImage, () {
+                  handleImageUpload(
+                    setImage: (f) => bankProofImage = f,
+                    setUrl: (u) => bankProofUrl = u,
+                    type: "bank_proof",
+                  );
+                }),
               ],
             ),
           ),

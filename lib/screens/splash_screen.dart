@@ -23,9 +23,7 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     _checkLogin();
   }
-
   Future<void> _checkLogin() async {
-
     await Future.delayed(const Duration(seconds: 2));
 
     final token = await AppPreferences.getToken();
@@ -34,66 +32,19 @@ class _SplashScreenState extends State<SplashScreen> {
 
     /// ❌ No token → Login
     if (token == null || token.isEmpty) {
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const AdminLogin()),
       );
       return;
-
     }
 
-    /// ✅ Token exists → Check KYC
-    final apiProvider = context.read<ApiProvider>();
-
-    await apiProvider.fetchKycStatus();
-
-    if (!mounted) return;
-
-    final status = apiProvider.kycStatus;
-    final submittedAt = apiProvider.submittedAt;
-
-    /// ✅ Approved
-    if (status == "APPROVED") {
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
-      );
-
-    }
-
-    /// ⏳ Under review
-    else if (status == "PENDING" && submittedAt != null) {
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const KycStatusScreen()),
-      );
-
-    }
-
-    /// ❌ Rejected
-    else if (status == "REJECTED") {
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const KycStatusScreen()),
-      );
-
-    }
-
-    /// 🆕 Not submitted
-    else {
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const KycScreen()),
-      );
-
-    }
+    /// ✅ Token exists → Navigate directly to Dashboard
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const DashboardScreen()),
+    );
   }
-
   @override
   Widget build(BuildContext context) {
     return const Scaffold(

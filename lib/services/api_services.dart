@@ -56,7 +56,7 @@ class ApiServices {
     required String email,
     required String password,
   }) async {
-    final url = Uri.parse("https://pixpe-backend.onrender.com/auth/signup");
+    final url = Uri.parse("https://pixpe.dtcindia.co.in/api/auth/signup");
 
     final response = await http.post(
       url,
@@ -83,7 +83,7 @@ class ApiServices {
   // 🔑 LOGIN ADMIN
   // ==============================
   Future<Map<String, dynamic>> loginAdmin(String email, String password) async {
-    final url = Uri.parse("https://pixpe-backend.onrender.com/auth/login");
+    final url = Uri.parse("https://pixpe.dtcindia.co.in/api/auth/login");
 
     final response = await http.post(
       url,
@@ -113,7 +113,7 @@ class ApiServices {
   // ==============================
   // 📍 GET AOI
   Future<List<dynamic>> getAoi() async {
-    final url = Uri.parse("https://pixpe-backend.onrender.com/aoi/assigned");
+    final url = Uri.parse("https://pixpe.dtcindia.co.in/api/aoi/assigned");
     final headers = await _getAuthHeaders();
     final response = await http.get(url, headers: headers);
 
@@ -131,7 +131,7 @@ class ApiServices {
 // ==============================
   Future<List<dynamic>> getUnAssignedAoi() async {
     final url = Uri.parse(
-      "https://pixpe-backend.onrender.com/aoi?unassigned=true",
+      "https://pixpe.dtcindia.co.in/api/aoi?unassigned=true",
     );
 
     final headers = await _getAuthHeaders();
@@ -158,7 +158,7 @@ class ApiServices {
   }) async {
 
     final url = Uri.parse(
-      "https://pixpe-backend.onrender.com/aoi-requests",
+      "https://pixpe.dtcindia.co.in/api/aoi-requests",
     );
 
     final headers = await _getAuthHeaders();
@@ -180,7 +180,7 @@ class ApiServices {
   // 👤 GET USER PROFILE
   // ==============================
   Future<Map<String, dynamic>> getUserProfile() async {
-    final url = Uri.parse("https://pixpe-backend.onrender.com/users/profile");
+    final url = Uri.parse("https://pixpe.dtcindia.co.in/api/users/profile");
     final headers = await _getAuthHeaders();
     final response = await http.get(url, headers: headers);
     return await _handleResponse(response);
@@ -193,7 +193,7 @@ class ApiServices {
     String? email,
     String? phone,
   }) async {
-    final url = Uri.parse("https://pixpe-backend.onrender.com/users/profile");
+    final url = Uri.parse("https://pixpe.dtcindia.co.in/api/users/profile");
     final headers = await _getAuthHeaders();
 
     // Only include non-null fields
@@ -215,7 +215,7 @@ class ApiServices {
   // ▶ START AOI
   // ==============================
   Future<Map<String, dynamic>> startAoi(String aoiId) async {
-    final url = Uri.parse("https://pixpe-backend.onrender.com/aoi/$aoiId/start");
+    final url = Uri.parse("https://pixpe.dtcindia.co.in/api/aoi/$aoiId/start");
     final headers = await _getAuthHeaders();
     final response = await http.patch(url, headers: headers);
     return await _handleResponse(response);
@@ -225,7 +225,7 @@ class ApiServices {
   // ✅ SUBMIT AOI
   // ==============================
   Future<Map<String, dynamic>> submitAoi(String aoiId) async {
-    final url = Uri.parse("https://pixpe-backend.onrender.com/aoi/$aoiId/submit");
+    final url = Uri.parse("https://pixpe.dtcindia.co.in/api/aoi/$aoiId/submit");
     final headers = await _getAuthHeaders();
     final response = await http.patch(url, headers: headers);
     return await _handleResponse(response);
@@ -246,7 +246,7 @@ class ApiServices {
   }) async {
 
     final url = Uri.parse(
-      "https://pixpe-backend.onrender.com/photos/upload",
+      "https://pixpe.dtcindia.co.in/api/photos/upload",
     );
 
     final headers = await _getAuthHeaders();
@@ -281,7 +281,7 @@ class ApiServices {
 // ==============================
   Future<List<dynamic>> getMyUploadedPhotos(String aoiId) async {
     final url = Uri.parse(
-      "https://pixpe-backend.onrender.com/photos/my-uploads?aoi_id=$aoiId",
+      "https://pixpe.dtcindia.co.in/api/photos/my-uploads?aoi_id=$aoiId",
     );
 
     final headers = await _getAuthHeaders();
@@ -296,7 +296,7 @@ class ApiServices {
   // 🔁 RESUBMIT PHOTO
   // ==============================
   Future<Map<String, dynamic>> resubmitPhoto(String photoId) async {
-    final url = Uri.parse("https://pixpe-backend.onrender.com/photos/$photoId/resubmit");
+    final url = Uri.parse("https://pixpe.dtcindia.co.in/api/photos/$photoId/resubmit");
     final headers = await _getAuthHeaders();
     final response = await http.patch(url, headers: headers);
     return await _handleResponse(response);
@@ -306,7 +306,7 @@ class ApiServices {
   // 🗑 DELETE PHOTO
   // ==============================
   Future<Map<String, dynamic>> deletePhoto(String photoId) async {
-    final url = Uri.parse("https://pixpe-backend.onrender.com/photos/$photoId");
+    final url = Uri.parse("https://pixpe.dtcindia.co.in/api/photos/$photoId");
     final headers = await _getAuthHeaders();
     final response = await http.delete(url, headers: headers);
     return await _handleResponse(response);
@@ -318,7 +318,7 @@ class ApiServices {
     required String filePath,
     required String type,
   }) async {
-    final url = Uri.parse("https://pixpe-backend.onrender.com/surveyor/kyc/upload");
+    final url = Uri.parse("https://pixpe.dtcindia.co.in/api/surveyor/kyc/upload");
 
     final headers = await _getAuthHeaders();
 
@@ -360,7 +360,7 @@ class ApiServices {
   }) async {
 
     final url = Uri.parse(
-      "https://pixpe-backend.onrender.com/surveyor/kyc",
+      "https://pixpe.dtcindia.co.in/api/surveyor/kyc",
     );
 
     final headers = await _getAuthHeaders();
@@ -395,7 +395,7 @@ class ApiServices {
   Future<Map<String, dynamic>> getKycStatus() async {
 
     final url = Uri.parse(
-      "https://pixpe-backend.onrender.com/surveyor/kyc/status",
+      "https://pixpe.dtcindia.co.in/api/surveyor/kyc/status",
     );
 
     final headers = await _getAuthHeaders();

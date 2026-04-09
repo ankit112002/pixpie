@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../app_preferences.dart';
 import '../services/api_services.dart';
 import 'api_provider.dart';
@@ -41,7 +42,7 @@ class AoiProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      var uri = Uri.parse("https://pixpe-backend.onrender.com/photos/upload");
+      var uri = Uri.parse("https://pixpe.dtcindia.co.in/api/photos/upload");
       var request = http.MultipartRequest("POST", uri);
       final token = await AppPreferences.getToken();
 
@@ -52,8 +53,11 @@ class AoiProvider extends ChangeNotifier {
       request.fields['longitude'] = longitude;
       request.fields['photo_type'] = "front";
 
-      request.files.add(await http.MultipartFile.fromPath('file', filePath));
-
+      request.files.add(await http.MultipartFile.fromPath(
+        'file',
+        filePath,
+        contentType: MediaType('image', 'png'),  // ← force PNG MIME type
+      ));
       var response = await request.send();
       var responseData = await response.stream.bytesToString();
 
@@ -100,7 +104,7 @@ class AoiProvider extends ChangeNotifier {
     try {
       final token = await AppPreferences.getToken();
       final uri = Uri.parse(
-        "https://pixpe-backend.onrender.com/photos/my-uploads?aoi_id=$aoiId",
+        "https://pixpe.dtcindia.co.in/api/photos/my-uploads?aoi_id=$aoiId",
       );
 
       final response = await http.get(
@@ -206,7 +210,7 @@ class AoiProvider extends ChangeNotifier {
 
     try {
       final response = await http.patch(
-        Uri.parse("https://pixpe-backend.onrender.com/aoi/$aoiId/submit"),
+        Uri.parse("https://pixpe.dtcindia.co.in/api/aoi/$aoiId/submit"),
         headers: {
           "Content-Type": "application/json",
           if (token != null) "Authorization": "Bearer $token",

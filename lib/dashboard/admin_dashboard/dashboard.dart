@@ -57,7 +57,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             );
           }
 
-          final aois = (provider.data as List<dynamic>?) ?? [];
+         // final rawData = provider.data;
+
+          final aois = provider.data is List ? provider.data as List : [];
+
+          // if (rawData is List) {
+          //   aois = rawData;
+          // } else if (rawData is Map<String, dynamic>) {
+          //   aois = rawData['data'] ?? rawData['aois'] ?? [];
+          // }
 
           final activeCount = aois.length;
           final photosToday = 0;
@@ -81,204 +89,204 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
 
           return RefreshIndicator(
-              onRefresh: () async {
-                await Provider.of<ApiProvider>(context, listen: false).getAoi();
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Welcome back, $surveyorName",
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+            onRefresh: () async {
+              await Provider.of<ApiProvider>(context, listen: false).getAoi();
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Welcome back, $surveyorName",
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  "Here's your Pixpe progress for today",
-                  style: TextStyle(fontSize: 16, color: Colors.black54),
-                ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 4),
+                  const Text(
+                    "Here's your Pixpe progress for today",
+                    style: TextStyle(fontSize: 16, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 24),
 
-                // ----------------- Summary Cards -----------------
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    Row(
-                      children: [
-                        _buildProfessionalSummaryCard(
-                          "Active AOIs",
-                          "$activeCount",
-                          Icons.location_on,
-                          Colors.deepPurple,
-                          screenWidth,
-                        ),
-                        _buildProfessionalSummaryCard(
-                          "Photos Today",
-                          "$photosToday",
-                          Icons.camera_alt,
-                          Colors.teal,
-                          screenWidth,
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        _buildProfessionalSummaryCard(
-                          "Completed",
-                          "$completedCount",
-                          Icons.check_circle,
-                          Colors.orange,
-                          screenWidth,
-                        ),
-                        _buildProfessionalSummaryCard(
-                          "PixPoint",
-                          "₹$todaysEarnings",
-                          Icons.currency_rupee,
-                          Colors.pink,
-                          screenWidth,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  // ----------------- Summary Cards -----------------
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      Row(
+                        children: [
+                          _buildProfessionalSummaryCard(
+                            "Active AOIs",
+                            "$activeCount",
+                            Icons.location_on,
+                            Colors.deepPurple,
+                            screenWidth,
+                          ),
+                          _buildProfessionalSummaryCard(
+                            "Photos Today",
+                            "$photosToday",
+                            Icons.camera_alt,
+                            Colors.teal,
+                            screenWidth,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          _buildProfessionalSummaryCard(
+                            "Completed",
+                            "$completedCount",
+                            Icons.check_circle,
+                            Colors.orange,
+                            screenWidth,
+                          ),
+                          _buildProfessionalSummaryCard(
+                            "PixPoint",
+                            "₹$todaysEarnings",
+                            Icons.currency_rupee,
+                            Colors.pink,
+                            screenWidth,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
 
-                const SizedBox(height: 24),
-                const Text(
-                  "Quick Actions",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 24),
+                  const Text(
+                    "Quick Actions",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
 
-                // ----------------- Quick Action Cards -----------------
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    Row(
-                      children: [
-                        _buildProfessionalActionCard(
-                          "View Assigned \n          AOIs",
-                          Icons.map,
-                          screenWidth,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const AOIScreen(),
-                              ),
-                            );
-                          },
-                        ),
-
-                        _buildProfessionalActionCard(
-                          "View UnAssigned\n          AOIs",
-                          Icons.map,
-                          screenWidth,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const UnassignedAoiScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        _buildProfessionalActionCard(
-                          "PixPoint",
-                          Icons.account_balance_wallet,
-                          screenWidth,
-                        ),
-                        _buildProfessionalActionCard(
-                          "Report",
-                          Icons.report_problem_outlined,
-                          screenWidth,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                // ----------------- AOI Carousel -----------------
-                const SizedBox(height: 24),
-                const Text(
-                  "Your AOIs",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-
-                SizedBox(
-                  height: 180, // height of the cards
-                  child: aois.isEmpty
-                      ? const Center(child: Text("No AOIs available"))
-                      : ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: aois.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(width: 12),
-                          itemBuilder: (context, index) {
-                            final aoi = aois[index];
-                            return SizedBox(
-                              width:
-                                  MediaQuery.of(context).size.width *
-                                  0.6, // each card width
-                              child: Card(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                  // ----------------- Quick Action Cards -----------------
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      Row(
+                        children: [
+                          _buildProfessionalActionCard(
+                            "View Assigned \n          AOIs",
+                            Icons.map,
+                            screenWidth,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AOIScreen(),
                                 ),
-                                elevation: 4,
-                                shadowColor: Colors.black26,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        aoi['aoi_name'] ?? 'Unnamed AOI',
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        "Code: ${aoi['aoi_code']}",
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.black54,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        "${aoi['city'] ?? '-'}, ${aoi['state'] ?? '-'}",
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.black54,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
+                              );
+                            },
+                          ),
+
+                          _buildProfessionalActionCard(
+                            "View UnAssigned\n          AOIs",
+                            Icons.map,
+                            screenWidth,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const UnassignedAoiScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          _buildProfessionalActionCard(
+                            "PixPoint",
+                            Icons.account_balance_wallet,
+                            screenWidth,
+                          ),
+                          _buildProfessionalActionCard(
+                            "Report",
+                            Icons.report_problem_outlined,
+                            screenWidth,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  // ----------------- AOI Carousel -----------------
+                  const SizedBox(height: 24),
+                  const Text(
+                    "Your AOIs",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+
+                  SizedBox(
+                    height: 180, // height of the cards
+                    child: aois.isEmpty
+                        ? const Center(child: Text("No AOIs available"))
+                        : ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: aois.length,
+                      separatorBuilder: (context, index) =>
+                      const SizedBox(width: 12),
+                      itemBuilder: (context, index) {
+                        final aoi = aois[index];
+                        return SizedBox(
+                          width:
+                          MediaQuery.of(context).size.width *
+                              0.6, // each card width
+                          child: Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 4,
+                            shadowColor: Colors.black26,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    aoi['aoi_name'] ?? 'Unnamed AOI',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    "Code: ${aoi['aoi_code']}",
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black54,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    "${aoi['city'] ?? '-'}, ${aoi['state'] ?? '-'}",
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black54,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
-                ),
-              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
           );
         },
       ),
@@ -287,12 +295,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ----------------- Professional Summary Card -----------------
   Widget _buildProfessionalSummaryCard(
-    String title,
-    String count,
-    IconData icon,
-    Color color,
-    double screenWidth,
-  ) {
+      String title,
+      String count,
+      IconData icon,
+      Color color,
+      double screenWidth,
+      ) {
     return SizedBox(
       width: screenWidth * 0.45,
       child: Card(

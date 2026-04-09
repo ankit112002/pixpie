@@ -128,7 +128,6 @@ class _AdminLoginState extends State<AdminLogin> {
     return true;
   }
   void _handleLogin(ApiProvider apiProvider) async {
-
     if (!_validateInputs()) return;
 
     final email = emailController.text.trim();
@@ -140,58 +139,19 @@ class _AdminLoginState extends State<AdminLogin> {
     );
 
     if (apiProvider.error != null) {
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(apiProvider.error!)),
       );
       return;
     }
 
-    await apiProvider.fetchKycStatus();
-
     if (!mounted) return;
 
-    final status = apiProvider.kycStatus;
-
-    /// ✅ Approved
-    if (status == "APPROVED") {
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
-      );
-
-    }
-
-    /// ⏳ Under Review
-    else if (status == "SUBMITTED") {
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const KycStatusScreen()),
-      );
-
-    }
-
-    /// ❌ Rejected
-    else if (status == "REJECTED") {
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const KycStatusScreen()),
-      );
-
-    }
-
-    /// 🆕 Not submitted (PENDING)
-    else {
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const KycScreen()),
-      );
-
-    }
+    // Directly navigate to Dashboard after successful login
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const DashboardScreen()),
+    );
   }
   @override
   Widget build(BuildContext context) {

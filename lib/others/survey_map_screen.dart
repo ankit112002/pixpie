@@ -326,7 +326,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
 
       /// ===============================
       /// SAVE CROPPED FILE
-      final croppedFile = File('${photo.path}_cropped.jpg');
+      final croppedFile = File('${photo.path}_cropped.png');
       await croppedFile.writeAsBytes(croppedImage);
 
       /// ===============================
@@ -561,14 +561,13 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
   Future<File> _compressImage(File file) async {
     final result = await FlutterImageCompress.compressWithFile(
       file.absolute.path,
-      quality: 70,
+      quality: 100,           // PNG is lossless, quality param is ignored — set 100 for clarity
       minWidth: 1080,
       minHeight: 1080,
+      format: CompressFormat.png,   // ← force PNG
     );
-
     final compressedFile =
-    File('${file.path}_compressed.jpg')..writeAsBytesSync(result!);
-
+    File('${file.path}_compressed.png')..writeAsBytesSync(result!);  // ← .png extension
     return compressedFile;
   }
 }

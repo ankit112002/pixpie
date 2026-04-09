@@ -106,7 +106,7 @@ class ApiProvider extends ChangeNotifier {
     required String name,
   }) async {
 
-    const url = "https://pixpe-backend.onrender.com/auth/signup";
+    const url = "https://pixpe.dtcindia.co.in/api/auth/signup";
 
     await post(
       url: url,
@@ -130,7 +130,7 @@ class ApiProvider extends ChangeNotifier {
     _error = null;
     _data = null;
 
-    const url = "https://pixpe-backend.onrender.com/auth/login";
+    const url = "https://pixpe.dtcindia.co.in/api/auth/login";
 
     try {
 
@@ -198,7 +198,7 @@ class ApiProvider extends ChangeNotifier {
       final token = await AppPreferences.getToken();
 
       final response = await http.get(
-        Uri.parse("https://pixpe-backend.onrender.com/aoi/assigned"),
+        Uri.parse("https://pixpe.dtcindia.co.in/api/aoi/assigned"),
         headers: {
           "Content-Type": "application/json",
           "Authorization": "Bearer $token",

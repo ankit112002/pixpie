@@ -192,12 +192,21 @@ class _AppDrawerState extends State<AppDrawer> {
   }
 
   Future<void> _logoutAndNavigate() async {
-    Navigator.of(context).maybePop();
-    await AppPreferences.logout();
-    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const AdminLogin()),
-          (route) => false,
-    );
+    try {
+      // Example async logout operation
+      await AppPreferences.clearToken();
+
+      if (!mounted) return; // <-- ADD THIS CHECK
+
+      // Navigate safely
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminLogin()),
+      );
+    } catch (e) {
+      debugPrint("Logout error: $e");
+    }
+  }
   }
 
   Widget _drawerItem({
@@ -220,4 +229,3 @@ class _AppDrawerState extends State<AppDrawer> {
       onTap: onTap,
     );
   }
-}

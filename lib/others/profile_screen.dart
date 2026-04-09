@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pixpie/others/profile_stat_card.dart';
 import 'package:provider/provider.dart';
 import '../provider/profile_provider.dart';
+import 'kyc_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -142,6 +143,103 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
 
+            /// 🔹 KYC Verification Card
+            /// 🔹 KYC Verification Card
+            _sectionTitle("KYC Verification"),
+            const SizedBox(height: 10),
+            Consumer<ProfileProvider>(
+              builder: (context, provider, child) {
+                final profile = provider.profile;
+                final kycStatus = profile?["kyc_status"] ?? "PENDING";
+                final rejectedReason = profile?["kyc_rejected_reason"];
+
+                IconData icon;
+                Color statusColor;
+                String message;
+                String buttonText;
+                bool buttonEnabled;
+
+                switch (kycStatus) {
+                  case "APPROVED":
+                    icon = Icons.verified;
+                    statusColor = Colors.green;
+                    message = "Your KYC is approved";
+                    buttonText = "Submitted";
+                    buttonEnabled = false;
+                    break;
+                  case "REJECTED":
+                    icon = Icons.cancel;
+                    statusColor = Colors.red;
+                    message = rejectedReason ?? "Your KYC was rejected";
+                    buttonText = "ReSubmit";
+                    buttonEnabled = true; // enable for resubmit
+                    break;
+                  case "SUBMITTED":
+                    icon = Icons.hourglass_top;
+                    statusColor = Colors.orange;
+                    message = "KYC under review";
+                    buttonText = "Submitted";
+                    buttonEnabled = false; // disable while under review
+                    break;
+                  default: // PENDING / Not submitted
+                    icon = Icons.info;
+                    statusColor = Colors.blue;
+                    message = "KYC not submitted";
+                    buttonText = "Submit";
+                    buttonEnabled = true;
+                }
+
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: _boxDecoration(),
+                  child: Row(
+                    children: [
+                      Icon(icon, size: 40, color: statusColor),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Identity Verification",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              message,
+                              style: TextStyle(color: statusColor),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: buttonEnabled
+                            ? () async {
+                          // Navigate to KYC screen
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const KycScreen()),
+                          );
+
+                          // Refresh profile after returning
+                          await provider.fetchProfile();
+                          setState(() {}); // rebuild to show updated KYC status
+                        }
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: buttonEnabled ? statusColor : Colors.grey,
+                        ),
+                        child: Text(
+                          buttonText,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      )
+                    ],
+                  ),
+                );
+              },
+            ),
+
             const SizedBox(height: 20),
 
             /// 🔹 Achievements Card
@@ -169,75 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 20),
 
-            /// 🔹 KYC Verification Card
-            _sectionTitle("KYC Verification"),
-            const SizedBox(height: 10),
-            Consumer<ProfileProvider>(
-              builder: (context, provider, child) {
-                final profile = provider.profile;
-                final kycStatus = profile?["kyc_status"] ?? "";
-                final rejectedReason = profile?["kyc_rejected_reason"];
 
-                Color statusColor;
-                String message;
-
-                if (kycStatus == "APPROVED") {
-                  statusColor = Colors.green;
-                  message = "Your KYC is approved";
-                } else if (kycStatus == "SUBMITTED") {
-                  statusColor = Colors.orange;
-                  message = "KYC under review";
-                } else {
-                  statusColor = Colors.red;
-                  message = rejectedReason != null && rejectedReason.isNotEmpty
-                      ? rejectedReason
-                      : "Your document was rejected";
-                }
-
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: _boxDecoration(),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: statusColor,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Identity Verification",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              message,
-                              style: TextStyle(color: statusColor),
-                            ),
-                          ],
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: statusColor,
-                        ),
-                        child: const Text("Re-upload"),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(height: 20),
 
             /// 🔹 Settings Card
             _sectionTitle("Settings"),
