@@ -308,18 +308,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 25),
 
             /// 🔹 Sign Out Button
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.logout, color: Colors.red),
-                label: const Text(
-                  "Sign Out",
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ),
-            const SizedBox(height: 40),
+            // SizedBox(
+            //   width: double.infinity,
+            //   child: OutlinedButton.icon(
+            //     onPressed: () {},
+            //     icon: const Icon(Icons.logout, color: Colors.red),
+            //     label: const Text(
+            //       "Sign Out",
+            //       style: TextStyle(color: Colors.red),
+            //     ),
+            //   ),
+            // ),
+             const SizedBox(height: 40),
           ],
         ),
       ),

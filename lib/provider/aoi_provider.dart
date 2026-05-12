@@ -15,6 +15,7 @@ class AoiProvider extends ChangeNotifier {
   bool isStartingAoi = false;
   bool isSubmittingAoi = false;
   bool isLoading=false;
+  int totalUploadedPhotos = 0;
 
   String? error;
   List<dynamic> myPhotos = [];

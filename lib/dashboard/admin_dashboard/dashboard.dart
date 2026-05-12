@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:pixpie/others/aoi_screen.dart';
+import 'package:pixpie/others/earning_screen.dart';
 import 'package:pixpie/others/unassigned_aoi_screen.dart';
 import 'package:provider/provider.dart';
 import '../../others/app_drawer.dart';
+import '../../provider/aoi_provider.dart';
 import '../../provider/api_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -16,8 +18,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ApiProvider>(context, listen: false).getAoi();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final apiProvider =
+      Provider.of<ApiProvider>(context, listen: false);
+
+      final aoiProvider =
+      Provider.of<AoiProvider>(context, listen: false);
+
+      await apiProvider.getAoi();
+
+      // Fetch photos for all AOIs
+      final aois =
+      apiProvider.data is List ? apiProvider.data as List : [];
+
+      int totalPhotos = 0;
+
+      for (var aoi in aois) {
+        final aoiId = aoi['id'].toString();
+
+        await aoiProvider.fetchMyUploadedPhotos(aoiId);
+
+        totalPhotos += aoiProvider.myPhotos.length;
+      }
+
+      // Store total dynamically
+      aoiProvider.totalUploadedPhotos = totalPhotos;
     });
   }
 
@@ -39,8 +65,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       drawer: const AppDrawer(), // <-- Use your real drawer here
 
-      body: Consumer<ApiProvider>(
-        builder: (context, provider, child) {
+      body: Consumer2<ApiProvider, AoiProvider>(
+        builder: (context, provider, aoiProvider, child) {
           if (provider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -68,7 +94,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // }
 
           final activeCount = aois.length;
-          final photosToday = 0;
+          final photosToday = aoiProvider.totalUploadedPhotos;
           final todaysEarnings = 0;
 
           /// Count completed AOIs dynamically
@@ -205,7 +231,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             "PixPoint",
                             Icons.account_balance_wallet,
                             screenWidth,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const EarningsScreen(),
+                                ),
+                              );
+                            },
                           ),
+                          // _buildProfessionalActionCard(
+                          //   "PixPoint",
+                          //   Icons.account_balance_wallet,
+                          //   screenWidth,
+                          // ),
                           _buildProfessionalActionCard(
                             "Report",
                             Icons.report_problem_outlined,

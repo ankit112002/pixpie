@@ -185,7 +185,7 @@ class _AppDrawerState extends State<AppDrawer> {
               }
           ),
 
-          const SizedBox(height: 30),
+          const SizedBox(height: 50),
         ],
       ),
     );

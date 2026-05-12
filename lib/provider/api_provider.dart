@@ -344,12 +344,10 @@ class ApiProvider extends ChangeNotifier {
     required String ifscCode,
     required String bankProofUrl,
   }) async {
-
     _setLoading(true);
-    _error = null;
+    _error = null; // Clear previous errors
 
     try {
-
       final response = await _apiServices.submitKyc(
         fullName: fullName,
         dateOfBirth: dateOfBirth,
@@ -368,18 +366,15 @@ class ApiProvider extends ChangeNotifier {
       );
 
       _data = response;
-
       return true;
-
     } catch (e) {
-
-      _error = e.toString();
+      // ✅ Upgrade: Clean the error message to remove "Exception: "
+      // and capture the actual backend message
+      _error = e.toString().replaceAll("Exception: ", "");
       return false;
-
     } finally {
-
       _setLoading(false);
-
+      // notifyListeners() is already called inside _setLoading
     }
   }
   /// ===============================

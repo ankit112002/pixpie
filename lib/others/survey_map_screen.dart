@@ -42,6 +42,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
   Map<String, String> _photoPaths = {}; // markerId -> image path
 
   bool _isFollowingUser = true;
+  bool _isUploading = false;
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -123,6 +124,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
 
     debugPrint("Loaded $_photoCount saved photos successfully");
   }
+
   /// ===============================
   /// Load AOI Polygon
   void _loadPolygon() {
@@ -243,7 +245,6 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
     final polygonPoints = _polygons.first.points;
     bool isInside = _isPointInPolygon(point, polygonPoints);
 
-    // Only show message if user just exited the AOI
     if (!isInside && !_hasShownOutsideAoiMessage) {
       _hasShownOutsideAoiMessage = true;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -255,7 +256,6 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
       );
     }
 
-    // Reset flag when user comes back inside
     if (isInside) {
       _hasShownOutsideAoiMessage = false;
     }
@@ -311,8 +311,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
     }
 
     try {
-      /// ===============================
-      /// OPEN CROP SCREEN
+      /// Open crop screen
       Uint8List imageBytes = await originalFile.readAsBytes();
 
       Uint8List? croppedImage = await Navigator.push(
@@ -324,22 +323,18 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
 
       if (croppedImage == null) return;
 
-      /// ===============================
-      /// SAVE CROPPED FILE
+      /// Save cropped file
       final croppedFile = File('${photo.path}_cropped.png');
       await croppedFile.writeAsBytes(croppedImage);
 
-      /// ===============================
-      /// COMPRESS IMAGE
+      /// Compress image
       File compressedFile = await _compressImage(croppedFile);
 
-      /// ===============================
-      /// START UPLOAD
-      final provider = context.read<AoiProvider>();
+      /// Show loading overlay
+      setState(() => _isUploading = true);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Uploading photo...")),
-      );
+      /// Start upload
+      final provider = context.read<AoiProvider>();
 
       await provider.uploadPhoto(
         filePath: compressedFile.path,
@@ -352,8 +347,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
 
       _photoCount++;
 
-      /// ===============================
-      /// GET UPLOADED URL
+      /// Get uploaded URL
       String uploadedUrl = compressedFile.path;
 
       if (provider.myPhotos.isNotEmpty) {
@@ -362,8 +356,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
           p is Map &&
               p["aoi_id"] == widget.aoi["id"] &&
               (p["latitude"]?.toString() == _currentLatitude.toString() &&
-                  p["longitude"]?.toString() ==
-                      _currentLongitude.toString()),
+                  p["longitude"]?.toString() == _currentLongitude.toString()),
           orElse: () => null,
         ) as Map<String, dynamic>?;
 
@@ -372,31 +365,27 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
         }
       }
 
-      /// ===============================
-      /// ADD MARKER
+      /// Add marker
       final markerId = "photo_${DateTime.now().millisecondsSinceEpoch}";
       final photoPosition = LatLng(_currentLatitude, _currentLongitude);
 
       setState(() {
+        _isUploading = false;
         _markers.add(
           Marker(
             markerId: MarkerId(markerId),
             position: photoPosition,
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-              BitmapDescriptor.hueRed,
-            ),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
             infoWindow: InfoWindow(
               title: "Photo $_photoCount",
               onTap: () => _showImagePreview(uploadedUrl),
             ),
           ),
         );
-
         _photoPaths[markerId] = uploadedUrl;
       });
 
-      /// ===============================
-      /// SAVE LOCALLY
+      /// Save locally
       await _savePhotoLocally(uploadedUrl, photoPosition);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -406,6 +395,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
       );
     } catch (e) {
       debugPrint("Photo upload failed safely: $e");
+      setState(() => _isUploading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -415,6 +405,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
       );
     }
   }
+
   /// ===============================
   /// Save photo locally safely
   Future<void> _savePhotoLocally(String path, LatLng position) async {
@@ -447,9 +438,12 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
       appBar: AppBar(title: const Text("Survey Mode")),
       body: Stack(
         children: [
+          /// ── Map ──────────────────────────────────────────
           GoogleMap(
             initialCameraPosition: CameraPosition(
-              target: _polygons.isNotEmpty ? _polygons.first.points.first : const LatLng(0, 0),
+              target: _polygons.isNotEmpty
+                  ? _polygons.first.points.first
+                  : const LatLng(0, 0),
               zoom: 15,
             ),
             polygons: _polygons,
@@ -468,7 +462,8 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
                 Marker(
                   markerId: const MarkerId("user_location"),
                   position: center,
-                  icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+                  icon: BitmapDescriptor.defaultMarkerWithHue(
+                      BitmapDescriptor.hueAzure),
                 ),
               );
 
@@ -479,18 +474,20 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
               await _loadSavedPhotos();
             },
           ),
+
+          /// ── Capture button ───────────────────────────────
           Positioned(
             bottom: 60,
             left: 24,
             right: 24,
             child: GestureDetector(
-              onTap: _isInsideAoi ? _capturePhoto : null,
+              onTap: (_isInsideAoi && !_isUploading) ? _capturePhoto : null,
               child: Container(
                 height: 60,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
                   gradient: LinearGradient(
-                    colors: _isInsideAoi
+                    colors: (_isInsideAoi && !_isUploading)
                         ? const [Color(0xFF2563EB), Color(0xFF1D4ED8)]
                         : const [Color(0xFFB0B0B0), Color(0xFF9E9E9E)],
                   ),
@@ -498,40 +495,103 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
                 child: const Center(
                   child: Text(
                     "Capture Photo",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16),
                   ),
                 ),
               ),
             ),
           ),
+
+          /// ── Photo counter ────────────────────────────────
           Positioned(
             top: 20,
             right: 20,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(20)),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(20)),
               child: Text(
                 "Photos: $_photoCount",
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
           ),
+
+          /// ── My location FAB ──────────────────────────────
           Positioned(
             bottom: 140,
             right: 20,
             child: FloatingActionButton(
               backgroundColor: Colors.white,
               onPressed: _goToCurrentLocation,
-              child: const Icon(
-                Icons.my_location,
-                color: Colors.blue,
-              ),
+              child: const Icon(Icons.my_location, color: Colors.blue),
             ),
           ),
+
+          /// ── Upload loading overlay ───────────────────────
+          if (_isUploading)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 32, vertical: 28),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFF2563EB)),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        "Uploading Photo...",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "Please wait",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
+
   void _goToCurrentLocation() async {
     try {
       Position position = await Geolocator.getCurrentPosition(
@@ -542,10 +602,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
 
       _controller?.animateCamera(
         CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: current,
-            zoom: 18,
-          ),
+          CameraPosition(target: current, zoom: 18),
         ),
       );
 
@@ -558,17 +615,17 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
       debugPrint("Location error: $e");
     }
   }
+
   Future<File> _compressImage(File file) async {
     final result = await FlutterImageCompress.compressWithFile(
       file.absolute.path,
-      quality: 100,           // PNG is lossless, quality param is ignored — set 100 for clarity
-      minWidth: 1080,
-      minHeight: 1080,
-      format: CompressFormat.png,   // ← force PNG
+      quality: 75,
+      minWidth: 1024,
+      minHeight: 1024,
+      format: CompressFormat.jpeg,
     );
-    final compressedFile =
-    File('${file.path}_compressed.png')..writeAsBytesSync(result!);  // ← .png extension
+    final compressedFile = File('${file.path}_compressed.jpg')
+      ..writeAsBytesSync(result!);
     return compressedFile;
   }
 }
-
