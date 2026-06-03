@@ -256,7 +256,7 @@ class _AdminLoginState extends State<AdminLogin> {
                       const SizedBox(height: 10),
 
                       Text(
-                        "Login to continue to Pixpe",
+                        "Login to continue to PixPe",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.85),

@@ -166,7 +166,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                         /// App Name
                         const Text(
-                          "Pixpie",
+                          "PixPe",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 34,
@@ -214,7 +214,7 @@ class _SplashScreenState extends State<SplashScreen>
                 right: 0,
                 child: Center(
                   child: Text(
-                    "Powered by Pixpie",
+                    "Powered by PixPe",
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.5),
                       fontSize: 12,

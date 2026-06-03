@@ -45,7 +45,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.blue.shade800, Colors.blue.shade600],
+                    colors: [Colors.deepPurple.shade800, Colors.deepPurple.shade600],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -72,7 +72,7 @@ class _AppDrawerState extends State<AppDrawer> {
                         style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue,
+                          color: Colors.deepPurple,
                         ),
                       )
                           : null,

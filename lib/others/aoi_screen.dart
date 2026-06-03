@@ -85,8 +85,8 @@ class _AOIScreenState extends State<AOIScreen> {
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: const Text("AOIs"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: Consumer<ApiProvider>(

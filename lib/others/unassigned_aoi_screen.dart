@@ -52,6 +52,8 @@ class _UnassignedAoiScreenState
       backgroundColor: const Color(0xfff4f6f9),
       appBar: AppBar(
         elevation: 0,
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
         title: const Text(
           "Unassigned AOI",
           style: TextStyle(fontWeight: FontWeight.bold),

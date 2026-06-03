@@ -283,21 +283,21 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xfff5f6fa),
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.deepPurple,
+          foregroundColor: Colors.white,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.pop(context),
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.black),
+              icon: const Icon(Icons.refresh),
               onPressed: _refreshData,
             )
           ],
           title: const Text(
             "AOI Details",
-            style: TextStyle(color: Colors.black),
           ),
         ),
         body: Row(

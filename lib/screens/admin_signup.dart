@@ -253,7 +253,7 @@ class _AdminSignupState extends State<AdminSignup>
                       const SizedBox(height: 10),
 
                       Text(
-                        "Manage your Pixpe dashboard professionally",
+                        "Manage your PixPe dashboard Professionally",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.85),
