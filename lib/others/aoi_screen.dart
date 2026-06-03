@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:pixpie/others/aoi_detail_screen.dart';
 import 'package:provider/provider.dart';
 import '../provider/api_provider.dart';
+import 'aoi_detail_screen.dart';
 
 class AOIScreen extends StatefulWidget {
   const AOIScreen({super.key});

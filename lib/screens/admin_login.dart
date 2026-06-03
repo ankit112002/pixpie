@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:pixpie/dashboard/admin_dashboard/dashboard.dart';
-import 'package:pixpie/screens/admin_signup.dart';
 import 'package:provider/provider.dart';
 
+import '../dashboard/admin_dashboard/dashboard.dart';
 import '../provider/api_provider.dart';
+import 'admin_signup.dart';
 
 class AdminLogin extends StatefulWidget {
   const AdminLogin({super.key});

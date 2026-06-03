@@ -1,5 +1,5 @@
+import 'package:PixPe/screens/user_management_mobile.dart';
 import 'package:flutter/material.dart';
-import 'package:pixpie/screens/user_management_mobile.dart';
 
 class AOIManagementMobile extends StatelessWidget {
   const AOIManagementMobile({super.key});

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:pixpie/others/kyc_screen.dart';
-import 'package:pixpie/screens/admin_login.dart';
 import 'package:provider/provider.dart';
 
+import '../others/kyc_screen.dart';
 import '../provider/api_provider.dart';
+import 'admin_login.dart';
 
 class AdminSignup extends StatefulWidget {
   const AdminSignup({super.key});

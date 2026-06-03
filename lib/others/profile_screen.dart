@@ -1,5 +1,5 @@
+import 'package:PixPe/others/profile_stat_card.dart';
 import 'package:flutter/material.dart';
-import 'package:pixpie/others/profile_stat_card.dart';
 import 'package:provider/provider.dart';
 import '../provider/profile_provider.dart';
 import 'kyc_screen.dart';

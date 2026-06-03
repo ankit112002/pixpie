@@ -7,9 +7,9 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import 'package:pixpie/dashboard/admin_dashboard/dashboard.dart';
 import 'package:provider/provider.dart';
 
+import '../dashboard/admin_dashboard/dashboard.dart';
 import '../provider/api_provider.dart';
 
 class KycScreen extends StatefulWidget {

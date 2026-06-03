@@ -1,9 +1,8 @@
+import 'package:PixPe/provider/aoi_provider.dart';
+import 'package:PixPe/provider/api_provider.dart';
+import 'package:PixPe/provider/profile_provider.dart';
+import 'package:PixPe/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:pixpie/provider/aoi_provider.dart';
-import 'package:pixpie/provider/api_provider.dart';
-import 'package:pixpie/provider/profile_provider.dart';
-import 'package:pixpie/screens/admin_signup.dart';
-import 'package:pixpie/screens/splash_screen.dart';
 import 'package:provider/provider.dart';
 
 void main() {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:pixpie/others/aoi_screen.dart';
-import 'package:pixpie/others/earning_screen.dart';
-import 'package:pixpie/others/unassigned_aoi_screen.dart';
 import 'package:provider/provider.dart';
+import '../../others/aoi_screen.dart';
 import '../../others/app_drawer.dart';
+import '../../others/earning_screen.dart';
+import '../../others/unassigned_aoi_screen.dart';
 import '../../provider/aoi_provider.dart';
 import '../../provider/api_provider.dart';
 

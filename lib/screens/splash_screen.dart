@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:pixpie/dashboard/admin_dashboard/dashboard.dart';
-import 'package:pixpie/screens/admin_login.dart';
 
 import '../app_preferences.dart';
+import '../dashboard/admin_dashboard/dashboard.dart';
+import 'admin_login.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -155,11 +155,7 @@ class _SplashScreenState extends State<SplashScreen>
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.photo_camera_rounded,
-                            size: 55,
-                            color: Color(0xFF111827),
-                          ),
+                          child: Image.asset("assets/pixpe_logo.png")
                         ),
 
                         const SizedBox(height: 28),

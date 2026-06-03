@@ -1,10 +1,10 @@
+import 'package:PixPe/others/profile_screen.dart';
+import 'package:PixPe/others/unassigned_aoi_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:pixpie/others/unassigned_aoi_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:pixpie/others/profile_screen.dart';
-import 'package:pixpie/screens/admin_login.dart';
 import '../app_preferences.dart';
 import '../provider/profile_provider.dart';
+import '../screens/admin_login.dart';
 import 'aoi_screen.dart';
 import 'earning_screen.dart';
 
