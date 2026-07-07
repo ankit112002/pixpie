@@ -6,6 +6,23 @@ import 'package:provider/provider.dart';
 import '../provider/aoi_provider.dart';
 import '../provider/api_provider.dart';
 
+/// Same palette used across the app (dashboard, drawer, profile, AOIs, etc.)
+/// so every screen reads as one cohesive, professional design system.
+class _Palette {
+  static const primary = Color(0xFF4B2FBF);
+  static const primaryDark = Color(0xFF37217F);
+  static const background = Color(0xFFF5F6FA);
+  static const cardBorder = Color(0xFFEDEDF3);
+  static const textPrimary = Color(0xFF1D1B2E);
+  static const textSecondary = Color(0xFF6E6B80);
+
+  static const success = Color(0xFF1FA971);
+  static const warning = Color(0xFFE08A2E);
+  static const danger = Color(0xFFD7263D);
+  static const info = Color(0xFF2E86DE);
+  static const neutral = Color(0xFF8E8E9B);
+}
+
 class AoiDetailScreen extends StatefulWidget {
   final Map<String, dynamic> aoi;
   final List<Map<String, dynamic>> pois;
@@ -18,7 +35,7 @@ class AoiDetailScreen extends StatefulWidget {
   // Helper widgets
   static Widget _statusChip(String text, Color bg, Color textColor) =>
       Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(20),
@@ -28,20 +45,22 @@ class AoiDetailScreen extends StatefulWidget {
           style: TextStyle(
             fontSize: 12,
             color: textColor,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
           ),
         ),
       );
 
   static Widget _card({required Widget child}) => Container(
-    padding: const EdgeInsets.all(16),
+    padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: _Palette.cardBorder),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 10,
+          color: Colors.black.withOpacity(0.04),
+          blurRadius: 14,
           offset: const Offset(0, 5),
         ),
       ],
@@ -50,12 +69,23 @@ class AoiDetailScreen extends StatefulWidget {
   );
 
   static Widget _detailRow(String title, String value) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.only(bottom: 12),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: const TextStyle(color: Colors.grey)),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(title,
+            style: const TextStyle(color: _Palette.textSecondary, fontSize: 13.5)),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: _Palette.textPrimary,
+                fontSize: 13.5),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     ),
   );
@@ -137,31 +167,53 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
   void _showPoiBottomSheet(Map<String, dynamic> poi) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (_) => Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(22),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
             Text(
               poi["name"] ?? "POI",
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.bold,
+                  color: _Palette.textPrimary),
             ),
-            const SizedBox(height: 10),
-            Text("Status: ${poi["status"] ?? "Unknown"}"),
+            const SizedBox(height: 12),
+            Text("Status: ${poi["status"] ?? "Unknown"}",
+                style: const TextStyle(color: _Palette.textSecondary, fontSize: 13.5)),
             const SizedBox(height: 6),
-            Text("Latitude: ${poi["latitude"]}"),
-            Text("Longitude: ${poi["longitude"]}"),
-            const SizedBox(height: 20),
+            Text("Latitude: ${poi["latitude"]}",
+                style: const TextStyle(color: _Palette.textSecondary, fontSize: 13.5)),
+            Text("Longitude: ${poi["longitude"]}",
+                style: const TextStyle(color: _Palette.textSecondary, fontSize: 13.5)),
+            const SizedBox(height: 22),
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 45),
+                minimumSize: const Size(double.infinity, 46),
+                backgroundColor: _Palette.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text("Close"),
+              child: const Text("Close", style: TextStyle(fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -186,9 +238,9 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
               Polygon(
                 polygonId: PolygonId("polygon_${polygons.length}"),
                 points: points,
-                strokeColor: Colors.blue,
+                strokeColor: _Palette.primary,
                 strokeWidth: 3,
-                fillColor: Colors.blue.withOpacity(0.2),
+                fillColor: _Palette.primary.withOpacity(0.15),
               ),
             );
             allPoints.addAll(points);
@@ -205,9 +257,9 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
               Polygon(
                 polygonId: PolygonId("polygon_${polygons.length}"),
                 points: points,
-                strokeColor: Colors.blue,
+                strokeColor: _Palette.primary,
                 strokeWidth: 3,
-                fillColor: Colors.blue.withOpacity(0.2),
+                fillColor: _Palette.primary.withOpacity(0.15),
               ),
             );
             allPoints.addAll(points);
@@ -250,13 +302,13 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case "STARTED":
-        return Colors.orange;
+        return _Palette.warning;
       case "SUBMITTED":
-        return Colors.blue;
+        return _Palette.info;
       case "COMPLETED":
-        return Colors.green;
+        return _Palette.success;
       default:
-        return Colors.grey;
+        return _Palette.neutral;
     }
   }
 
@@ -281,23 +333,33 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
     return DefaultTabController(
       length: 1,
       child: Scaffold(
-        backgroundColor: const Color(0xfff5f6fa),
+        backgroundColor: _Palette.background,
         appBar: AppBar(
-          backgroundColor: Colors.deepPurple,
+          backgroundColor: _Palette.primary,
           foregroundColor: Colors.white,
           elevation: 0,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [_Palette.primary, _Palette.primaryDark],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => Navigator.pop(context),
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh_rounded),
               onPressed: _refreshData,
             )
           ],
           title: const Text(
             "AOI Details",
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 19),
           ),
         ),
         body: Row(
@@ -307,24 +369,20 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
                 width: 220,
                 color: Colors.white,
                 child: Column(
-                  children: const [
-                    SizedBox(height: 40),
-                    ListTile(title: Text("Home")),
-                    ListTile(title: Text("AOIs")),
-                    ListTile(title: Text("Earnings")),
-                    Spacer(),
-                    ListTile(
-                      title: Text(
-                        "Sign Out",
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                    SizedBox(height: 20),
+                  children: [
+                    const SizedBox(height: 40),
+                    _sideNavItem(Icons.home_outlined, "Home"),
+                    _sideNavItem(Icons.map_outlined, "AOIs"),
+                    _sideNavItem(Icons.account_balance_wallet_outlined, "Earnings"),
+                    const Spacer(),
+                    _sideNavItem(Icons.logout_rounded, "Sign Out", color: _Palette.danger),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
             Expanded(
               child: RefreshIndicator(
+                color: _Palette.primary,
                 onRefresh: _refreshData,
                 child: Padding(
                   padding: const EdgeInsets.all(24),
@@ -333,17 +391,21 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            aoiName,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              aoiName,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: _Palette.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 12),
                           AoiDetailScreen._statusChip(
                             aoiStatus,
-                            _getStatusColor(aoiStatus).withOpacity(0.2),
+                            _getStatusColor(aoiStatus).withOpacity(0.12),
                             _getStatusColor(aoiStatus),
                           ),
                         ],
@@ -353,12 +415,14 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _Palette.cardBorder),
                         ),
-                        child: const TabBar(
-                          indicatorColor: Colors.blue,
-                          labelColor: Colors.blue,
-                          unselectedLabelColor: Colors.grey,
-                          tabs: [Tab(text: "POIs")],
+                        child: TabBar(
+                          indicatorColor: _Palette.primary,
+                          labelColor: _Palette.primary,
+                          unselectedLabelColor: _Palette.textSecondary,
+                          labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+                          tabs: const [Tab(text: "POIs")],
                         ),
                       ),
                       Expanded(
@@ -401,6 +465,21 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
     );
   }
 
+  Widget _sideNavItem(IconData icon, String label, {Color color = _Palette.textPrimary}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: ListTile(
+        leading: Icon(icon, color: color, size: 20),
+        title: Text(
+          label,
+          style: TextStyle(color: color, fontWeight: FontWeight.w500, fontSize: 14.5),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      ),
+    );
+  }
+
   // ======================
   Widget _desktopLayout(
       String aoiCode,
@@ -413,25 +492,28 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
       int total,
       double progress,
       ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 3,
-          child: Column(
-            children: [
-              _progressCard(completed, pending, rejected, total, progress),
-              const SizedBox(height: 16),
-              Expanded(child: _mapCard()),
-            ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 3,
+            child: Column(
+              children: [
+                _progressCard(completed, pending, rejected, total, progress),
+                const SizedBox(height: 16),
+                Expanded(child: _mapCard()),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 20),
-        Expanded(
-          flex: 1,
-          child: _detailsCard(aoiCode, city, state, assignedUser),
-        ),
-      ],
+          const SizedBox(width: 20),
+          Expanded(
+            flex: 1,
+            child: _detailsCard(aoiCode, city, state, assignedUser),
+          ),
+        ],
+      ),
     );
   }
 
@@ -447,13 +529,15 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
       double progress,
       ) {
     return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),      children: [
-      _progressCard(completed, pending, rejected, total, progress),
-      const SizedBox(height: 16),
-      SizedBox(height: 300, child: _mapCard()),
-      const SizedBox(height: 16),
-      _detailsCard(aoiCode, city, state, assignedUser),
-    ],
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(top: 16),
+      children: [
+        _progressCard(completed, pending, rejected, total, progress),
+        const SizedBox(height: 16),
+        SizedBox(height: 300, child: _mapCard()),
+        const SizedBox(height: 16),
+        _detailsCard(aoiCode, city, state, assignedUser),
+      ],
     );
   }
 
@@ -470,46 +554,49 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
         children: [
           const Text(
             "Pixpe Progress",
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold, color: _Palette.textPrimary, fontSize: 15.5),
           ),
-          const SizedBox(height: 12),
-          LinearProgressIndicator(
-            value: progress,
-            minHeight: 8,
+          const SizedBox(height: 14),
+          ClipRRect(
             borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: _Palette.background,
+              color: _Palette.primary,
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _metric("Completed", completed, Colors.green),
-              _metric("Pending", pending, Colors.orange),
-              _metric("Rejected", rejected, Colors.red),
-              _metric("Total", total, Colors.blue),
-
-
+              _metric("Completed", completed, _Palette.success),
+              _metric("Pending", pending, _Palette.warning),
+              _metric("Rejected", rejected, _Palette.danger),
+              _metric("Total", total, _Palette.info),
             ],
           ),
         ],
       ),
     );
   }
+
   Widget _uploadedPhotosGallery() {
     return Consumer<AoiProvider>(
       builder: (context, provider, child) {
         if (provider.isFetchingPhotos) {
           return const Padding(
-            padding: EdgeInsets.all(10),
-            child: Center(child: CircularProgressIndicator()),
+            padding: EdgeInsets.all(14),
+            child: Center(child: CircularProgressIndicator(color: _Palette.primary)),
           );
         }
 
         if (provider.myPhotos.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
             child: Text(
               "No photos uploaded yet",
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 13.5),
             ),
           );
         }
@@ -520,7 +607,7 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
             const SizedBox(height: 20),
             const Text(
               "Uploaded Photos",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold, color: _Palette.textPrimary),
             ),
             const SizedBox(height: 12),
 
@@ -541,9 +628,9 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
                 final status =
                 (photo["status"] ?? "PENDING").toString().toUpperCase();
 
-                Color statusColor = Colors.orange;
-                if (status == "VERIFIED") statusColor = Colors.green;
-                if (status == "REJECTED") statusColor = Colors.red;
+                Color statusColor = _Palette.warning;
+                if (status == "VERIFIED") statusColor = _Palette.success;
+                if (status == "REJECTED") statusColor = _Palette.danger;
 
                 return Stack(
                   children: [
@@ -553,36 +640,43 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
                         showDialog(
                           context: context,
                           builder: (_) => Dialog(
+                            backgroundColor: Colors.black,
                             child: InteractiveViewer(
                               child: Image.network(
                                 imageUrl,
                                 fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) =>
-                                const Center(child: Text("Image error")),
+                                errorBuilder: (_, __, ___) => const Center(
+                                    child: Text("Image error",
+                                        style: TextStyle(color: Colors.white))),
                               ),
                             ),
                           ),
                         );
                       },
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: _Palette.cardBorder),
+                          ),
+                          child: Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
                         ),
                       ),
                     ),
 
                     /// STATUS BADGE
                     Positioned(
-                      top: 5,
-                      left: 5,
+                      top: 6,
+                      left: 6,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: 7,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
                           color: statusColor,
@@ -601,13 +695,16 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
 
                     /// DELETE BUTTON
                     Positioned(
-                      top: 5,
-                      right: 5,
+                      top: 6,
+                      right: 6,
                       child: provider.isDeleting(photoId)
                           ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                           : GestureDetector(
                         onTap: () async {
@@ -620,7 +717,7 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
-                            Icons.delete,
+                            Icons.delete_outline_rounded,
                             size: 16,
                             color: Colors.white,
                           ),
@@ -631,26 +728,34 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
                     /// RESUBMIT BUTTON (only if rejected)
                     if (status == "REJECTED")
                       Positioned(
-                        bottom: 5,
-                        left: 5,
-                        right: 5,
+                        bottom: 6,
+                        left: 6,
+                        right: 6,
                         child: provider.isResubmitting(photoId)
                             ? const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                             : ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                               vertical: 4,
                             ),
-                            backgroundColor: Colors.orange,
+                            backgroundColor: _Palette.warning,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                           onPressed: () async {
                             await provider.resubmitPhoto(photoId);
                           },
                           child: const Text(
                             "Resubmit",
-                            style: TextStyle(fontSize: 12),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -663,6 +768,7 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
       },
     );
   }
+
   Future<void> _refreshData() async {
     final apiProvider = context.read<ApiProvider>();
     final aoiProvider = context.read<AoiProvider>();
@@ -720,7 +826,7 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
         children: [
           const Text(
             "AOI Details",
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold, color: _Palette.textPrimary, fontSize: 15.5),
           ),
           const SizedBox(height: 16),
           AoiDetailScreen._detailRow("AOI Code", aoiCode),
@@ -757,18 +863,25 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
                   const Text(
                     "Survey Progress",
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
+                      color: _Palette.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 8,
+                      backgroundColor: _Palette.background,
+                      color: _Palette.primary,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 8,
-                  ),
-                  const SizedBox(height: 6),
-                  Text("$uploadedPhotos / $totalPois POIs completed"),
-                  const SizedBox(height: 15),
+                  Text("$uploadedPhotos / $totalPois POIs completed",
+                      style: const TextStyle(color: _Palette.textSecondary, fontSize: 13)),
+                  const SizedBox(height: 16),
 
                   /// START AOI / START SURVEY
                   ElevatedButton(
@@ -811,7 +924,14 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 45),
+                      minimumSize: const Size(double.infinity, 46),
+                      backgroundColor: _Palette.primary,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey.shade300,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: provider.isStartingAoi
                         ? const SizedBox(
@@ -828,12 +948,11 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
                           : isStarted
                           ? "Start Survey"
                           : "Start AOI",
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
                   const SizedBox(height: 12),
                   _uploadedPhotosGallery(),
-
-
                 ],
               );
             },
@@ -845,83 +964,96 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
               final isFetching = provider.isFetchingPhotos;
               final isSubmitted = widget.aoi["status"] == "SUBMITTED"; // NEW
 
-              return ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 45),
-                  backgroundColor: (isSubmitting || isUploading || isFetching || isSubmitted)
-                      ? Colors.grey
-                      : Colors.green,
-                ),
-                onPressed: (isSubmitting || isUploading || isFetching || isSubmitted)
-                    ? null
-                    : () async {
-                  await provider.fetchMyUploadedPhotos(widget.aoi["id"]);
-
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text("Submit AOI"),
-                      content: const Text(
-                        "Are you sure you want to submit this AOI? "
-                            "You will not be able to modify it after submission.",
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text("Cancel"),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text(
-                            "Submit",
-                            style: TextStyle(color: Colors.blue),
-                          ),
-                        ),
-                      ],
+              return Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 46),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    backgroundColor: (isSubmitting || isUploading || isFetching || isSubmitted)
+                        ? Colors.grey.shade300
+                        : _Palette.success,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  );
+                  ),
+                  onPressed: (isSubmitting || isUploading || isFetching || isSubmitted)
+                      ? null
+                      : () async {
+                    await provider.fetchMyUploadedPhotos(widget.aoi["id"]);
 
-                  if (confirm != true) return;
-
-                  provider.isSubmittingAoi = true;
-                  provider.notifyListeners();
-
-                  await provider.submitAoi(widget.aoi["id"]);
-
-                  provider.isSubmittingAoi = false;
-                  provider.notifyListeners();
-
-                  if (provider.error != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(provider.error!)),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("AOI Submitted Successfully ✅"),
-                        backgroundColor: Colors.green,
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        title: const Text("Submit AOI", style: TextStyle(fontWeight: FontWeight.bold)),
+                        content: const Text(
+                          "Are you sure you want to submit this AOI? "
+                              "You will not be able to modify it after submission.",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text("Cancel", style: TextStyle(color: _Palette.textSecondary)),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text(
+                              "Submit",
+                              style: TextStyle(color: _Palette.primary, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
                       ),
                     );
-                    setState(() {
-                      widget.aoi["status"] = "SUBMITTED"; // Mark as submitted
-                    });
-                    Navigator.pop(context, true);
-                  }
-                },
-                child: isSubmitting
-                    ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
+
+                    if (confirm != true) return;
+
+                    provider.isSubmittingAoi = true;
+                    provider.notifyListeners();
+
+                    await provider.submitAoi(widget.aoi["id"]);
+
+                    provider.isSubmittingAoi = false;
+                    provider.notifyListeners();
+
+                    if (provider.error != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(provider.error!)),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("AOI Submitted Successfully ?"),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                      setState(() {
+                        widget.aoi["status"] = "SUBMITTED"; // Mark as submitted
+                      });
+                      Navigator.pop(context, true);
+                    }
+                  },
+                  child: isSubmitting
+                      ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : Text(
+                    isUploading
+                        ? "Uploading Photos..."
+                        : isSubmitted
+                        ? "AOI Submitted"
+                        : "Submit AOI",
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-                )
-                    : isUploading
-                    ? const Text("Uploading Photos...")
-                    : isSubmitted
-                    ? const Text("AOI Submitted")
-                    : const Text("Submit AOI"),
+                ),
               );
             },
           ),
@@ -935,13 +1067,16 @@ class _AoiDetailScreenState extends State<AoiDetailScreen> {
       Text(
         value.toString(),
         style: TextStyle(
-          fontSize: 18,
+          fontSize: 19,
           fontWeight: FontWeight.bold,
           color: color,
         ),
       ),
       const SizedBox(height: 4),
-      Text(label),
+      Text(
+        label,
+        style: const TextStyle(color: _Palette.textSecondary, fontSize: 12.5),
+      ),
     ],
   );
 }

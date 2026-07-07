@@ -13,6 +13,19 @@ class ProfileProvider extends ChangeNotifier {
   Map<String, dynamic>? _profile;
   Map<String, dynamic>? get profile => _profile;
 
+  void _handleException(dynamic e) {
+    final errorStr = e.toString().replaceAll("Exception: ", "");
+    if (errorStr.contains('SocketException') || errorStr.contains('Connection refused')) {
+      _error = "Cannot connect to server. Please check your internet or try again later.";
+    } else if (errorStr.contains('TimeoutException')) {
+      _error = "Connection timed out. Please try again.";
+    } else if (errorStr.contains('FormatException')) {
+      _error = "Server returned an invalid response. Please try again later.";
+    } else {
+      _error = errorStr;
+    }
+  }
+
   // ==============================
   // 🔹 FETCH PROFILE
   // ==============================
@@ -24,7 +37,7 @@ class ProfileProvider extends ChangeNotifier {
     try {
       _profile = await _api.getUserProfile();
     } catch (e) {
-      _error = e.toString();
+      _handleException(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -51,7 +64,7 @@ class ProfileProvider extends ChangeNotifier {
       );
       _profile = updatedData;
     } catch (e) {
-      _error = e.toString();
+      _handleException(e);
     } finally {
       _isLoading = false;
       notifyListeners();

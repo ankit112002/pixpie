@@ -33,6 +33,22 @@ class _KycScreenState extends State<KycScreen> {
   final accountNumber = TextEditingController();
   final ifsc = TextEditingController();
 
+  bool _isPickingImage = false;
+
+  @override
+  void dispose() {
+    fullName.dispose();
+    dob.dispose();
+    address.dispose();
+    city.dispose();
+    state.dispose();
+    pin.dispose();
+    documentNumber.dispose();
+    accountNumber.dispose();
+    ifsc.dispose();
+    super.dispose();
+  }
+
   String documentType = "AADHAAR";
   String bankName = "";
 
@@ -314,21 +330,31 @@ class _KycScreenState extends State<KycScreen> {
     required Function(String) setUrl,
     required String type,
   }) async {
-    final file = await pickImage();
+    if (_isPickingImage) return;
+    
+    setState(() => _isPickingImage = true);
 
-    if (file == null) return;
+    try {
+      final file = await pickImage();
 
-    final compressed = await compressImage(file);
+      if (file == null) return;
 
-    setState(() => setImage(compressed));
+      final compressed = await compressImage(file);
 
-    final url = await uploadImage(
-      compressed,
-      type,
-    );
+      setState(() => setImage(compressed));
 
-    if (url != null) {
-      setUrl(url);
+      final url = await uploadImage(
+        compressed,
+        type,
+      );
+
+      if (url != null) {
+        setUrl(url);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPickingImage = false);
+      }
     }
   }
 

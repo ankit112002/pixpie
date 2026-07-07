@@ -12,8 +12,7 @@ class AdminSignup extends StatefulWidget {
   State<AdminSignup> createState() => _AdminSignupState();
 }
 
-class _AdminSignupState extends State<AdminSignup>
-    with SingleTickerProviderStateMixin {
+class _AdminSignupState extends State<AdminSignup> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
@@ -79,6 +78,8 @@ class _AdminSignupState extends State<AdminSignup>
   }
 
   void _showMessage(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(text),
@@ -155,11 +156,11 @@ class _AdminSignupState extends State<AdminSignup>
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
-    return Consumer<ApiProvider>(
-      builder: (context, apiProvider, child) {
-        return Scaffold(
-          backgroundColor: const Color(0xFFF4F7FB),
-          body: SafeArea(
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FB),
+      body: Consumer<ApiProvider>(
+        builder: (context, apiProvider, child) {
+          return SafeArea(
             child: Stack(
               children: [
                 /// TOP BACKGROUND
@@ -192,7 +193,7 @@ class _AdminSignupState extends State<AdminSignup>
                     width: 140,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withAlpha(20),
                     ),
                   ),
                 ),
@@ -205,7 +206,7 @@ class _AdminSignupState extends State<AdminSignup>
                     width: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withAlpha(12),
                     ),
                   ),
                 ),
@@ -226,7 +227,7 @@ class _AdminSignupState extends State<AdminSignup>
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
+                              color: Colors.black.withAlpha(38),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
                             ),
@@ -256,7 +257,7 @@ class _AdminSignupState extends State<AdminSignup>
                         "Manage your PixPe dashboard Professionally",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.85),
+                          color: Colors.white.withAlpha(216),
                           fontSize: 14,
                         ),
                       ),
@@ -271,7 +272,7 @@ class _AdminSignupState extends State<AdminSignup>
                           borderRadius: BorderRadius.circular(32),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
+                              color: Colors.black.withAlpha(20),
                               blurRadius: 30,
                               offset: const Offset(0, 10),
                             ),
@@ -303,25 +304,21 @@ class _AdminSignupState extends State<AdminSignup>
                               isVisible: _passwordVisible,
                               onToggle: () {
                                 setState(() {
-                                  _passwordVisible =
-                                  !_passwordVisible;
+                                  _passwordVisible = !_passwordVisible;
                                 });
                               },
                             ),
 
                             _buildTextField(
-                              controller:
-                              confirmPasswordController,
+                              controller: confirmPasswordController,
                               hint: "Confirm Password",
                               icon: Icons.lock_outline_rounded,
                               focusNode: confirmPasswordFocus,
                               isPassword: true,
-                              isVisible:
-                              _confirmPasswordVisible,
+                              isVisible: _confirmPasswordVisible,
                               onToggle: () {
                                 setState(() {
-                                  _confirmPasswordVisible =
-                                  !_confirmPasswordVisible;
+                                  _confirmPasswordVisible = !_confirmPasswordVisible;
                                 });
                               },
                             ),
@@ -336,75 +333,68 @@ class _AdminSignupState extends State<AdminSignup>
                                 onPressed: apiProvider.isLoading
                                     ? null
                                     : () async {
-                                  if (!_validateInputs()) {
-                                    return;
-                                  }
+                                        if (!_validateInputs()) {
+                                          return;
+                                        }
 
-                                  await apiProvider.adminSignUp(
-                                    email: emailController
-                                        .text
-                                        .trim(),
-                                    password:
-                                    passwordController
-                                        .text
-                                        .trim(),
-                                    name: nameController
-                                        .text
-                                        .trim(),
-                                  );
+                                        try {
+                                          await apiProvider.adminSignUp(
+                                            email: emailController.text.trim(),
+                                            password: passwordController.text.trim(),
+                                            name: nameController.text.trim(),
+                                          );
 
-                                  if (apiProvider.data !=
-                                      null &&
-                                      apiProvider.error ==
-                                          null) {
-                                    if (!mounted) return;
+                                          if (!mounted) return;
 
-                                    Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                        const KycScreen(),
-                                      ),
-                                    );
-                                  }
-                                },
+                                          if (apiProvider.error == null && apiProvider.data != null) {
+                                            _showMessage("Account created successfully! ✅");
+
+                                            Navigator.pushReplacement(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => const KycScreen(),
+                                              ),
+                                            );
+                                          } else if (apiProvider.error != null) {
+                                            _showMessage(apiProvider.error!);
+                                          }
+                                        } catch (e) {
+                                          debugPrint("Signup Button Error: $e");
+                                          _showMessage("An unexpected error occurred. Please try again.");
+                                        }
+                                      },
                                 style: ElevatedButton.styleFrom(
                                   elevation: 0,
-                                  backgroundColor:
-                                  const Color(0xFF7C3AED),
+                                  backgroundColor: const Color(0xFF7C3AED),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                    BorderRadius.circular(
+                                    borderRadius: BorderRadius.circular(
                                       18,
                                     ),
                                   ),
                                 ),
                                 child: apiProvider.isLoading
                                     ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child:
-                                  CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.white,
-                                  ),
-                                )
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          color: Colors.white,
+                                        ),
+                                      )
                                     : const Text(
-                                  "Create Account",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight:
-                                    FontWeight.w700,
-                                  ),
-                                ),
+                                        "Create Account",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
                               ),
                             ),
 
                             if (apiProvider.error != null)
                               Padding(
-                                padding:
-                                const EdgeInsets.only(top: 16),
+                                padding: const EdgeInsets.only(top: 16),
                                 child: Text(
                                   apiProvider.error!,
                                   textAlign: TextAlign.center,
@@ -418,8 +408,7 @@ class _AdminSignupState extends State<AdminSignup>
                             const SizedBox(height: 24),
 
                             Row(
-                              mainAxisAlignment:
-                              MainAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
                                   "Already have an account?",
@@ -430,20 +419,22 @@ class _AdminSignupState extends State<AdminSignup>
                                 ),
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                        const AdminLogin(),
-                                      ),
-                                    );
+                                    if (!mounted) return;
+                                    Future.delayed(Duration.zero, () {
+                                      if (!mounted) return;
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const AdminLogin(),
+                                        ),
+                                      );
+                                    });
                                   },
                                   child: const Text(
                                     "Login",
                                     style: TextStyle(
                                       color: Color(0xFF7C3AED),
-                                      fontWeight:
-                                      FontWeight.bold,
+                                      fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -460,9 +451,9 @@ class _AdminSignupState extends State<AdminSignup>
                 ),
               ],
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

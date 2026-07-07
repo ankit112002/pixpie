@@ -31,6 +31,19 @@ class ApiProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _handleException(dynamic e) {
+    final errorStr = e.toString().replaceAll("Exception: ", "");
+    if (errorStr.contains('SocketException') || errorStr.contains('Connection refused')) {
+      _error = "Cannot connect to server. Please check your internet or try again later.";
+    } else if (errorStr.contains('TimeoutException')) {
+      _error = "Connection timed out. Please try again.";
+    } else if (errorStr.contains('FormatException')) {
+      _error = "Server returned an invalid response. Please try again later.";
+    } else {
+      _error = errorStr;
+    }
+  }
+
   /// ===============================
   /// GENERIC POST API
   /// ===============================
@@ -56,7 +69,16 @@ class ApiProvider extends ChangeNotifier {
         Uri.parse(url),
         headers: headers,
         body: jsonEncode(body),
-      );
+      ).timeout(const Duration(seconds: 20));
+
+      debugPrint("API Response Status: ${response.statusCode}");
+      debugPrint("API Response Body: ${response.body}");
+
+      if (response.statusCode >= 500) {
+        _error = "Server is currently undergoing maintenance. Please try again later.";
+        _setLoading(false);
+        return;
+      }
 
       final decoded =
       response.body.isNotEmpty ? jsonDecode(response.body) : {};
@@ -65,13 +87,15 @@ class ApiProvider extends ChangeNotifier {
 
         _data = decoded;
 
-        final accessToken =
-            decoded['accessToken'] ??
-                decoded['access_token'] ??
-                decoded['token'];
+        if (decoded is Map) {
+          final accessToken =
+              decoded['accessToken'] ??
+                  decoded['access_token'] ??
+                  decoded['token'];
 
-        if (accessToken != null && accessToken is String) {
-          await AppPreferences.setToken(accessToken);
+          if (accessToken != null && accessToken is String) {
+            await AppPreferences.setToken(accessToken);
+          }
         }
 
       } else {
@@ -91,7 +115,8 @@ class ApiProvider extends ChangeNotifier {
       }
 
     } catch (e) {
-      _error = e.toString();
+      debugPrint("API POST Error: $e");
+      _handleException(e);
     }
 
     _setLoading(false);
@@ -125,63 +150,14 @@ class ApiProvider extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-
-    _setLoading(true);
-    _error = null;
-    _data = null;
-
     const url = "https://pixpe.dtcindia.co.in/api/auth/login";
-
-    try {
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "email": email,
-          "password": password,
-        }),
-      );
-
-      final responseData =
-      response.body.isNotEmpty ? jsonDecode(response.body) : {};
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-
-        final token =
-            responseData['accessToken'] ??
-                responseData['token'] ??
-                responseData['access_token'];
-
-        if (token == null || token.toString().isEmpty) {
-
-          _error = "Token not found in response";
-
-        } else {
-
-          await AppPreferences.setToken(token);
-
-          final savedToken = await AppPreferences.getToken();
-          debugPrint("Saved Token: $savedToken");
-
-          _data = responseData;
-
-        }
-
-      } else {
-
-        final errorMsg =
-            responseData["message"] ?? "Login failed";
-
-        _error = errorMsg.toString();
-
-      }
-
-    } catch (e) {
-      _error = e.toString();
-    }
-
-    _setLoading(false);
+    await post(
+      url: url,
+      body: {
+        "email": email,
+        "password": password,
+      },
+    );
   }
 
   /// ===============================
@@ -205,6 +181,12 @@ class ApiProvider extends ChangeNotifier {
         },
       );
 
+      if (response.statusCode >= 500) {
+        _error = "Server is currently undergoing maintenance. Please try again later.";
+        _setLoading(false);
+        return;
+      }
+
       if (response.statusCode == 200) {
 
         final decoded =
@@ -223,7 +205,7 @@ class ApiProvider extends ChangeNotifier {
       }
 
     } catch (e) {
-      _error = e.toString();
+      _handleException(e);
     }
 
     _setLoading(false);
@@ -248,7 +230,7 @@ class ApiProvider extends ChangeNotifier {
 
     } catch (e) {
 
-      _error = e.toString();
+      _handleException(e);
 
     }
 
@@ -279,7 +261,7 @@ class ApiProvider extends ChangeNotifier {
 
     } catch (e) {
 
-      _error = e.toString();
+      _handleException(e);
       return false;
 
     }
@@ -318,7 +300,7 @@ class ApiProvider extends ChangeNotifier {
       }
 
     } catch (e) {
-      _error = e.toString();
+      _handleException(e);
     } finally {
       _setLoading(false);
       notifyListeners();
@@ -368,13 +350,11 @@ class ApiProvider extends ChangeNotifier {
       _data = response;
       return true;
     } catch (e) {
-      // ✅ Upgrade: Clean the error message to remove "Exception: "
-      // and capture the actual backend message
-      _error = e.toString().replaceAll("Exception: ", "");
+      debugPrint("KYC Submit Error: $e");
+      _handleException(e);
       return false;
     } finally {
       _setLoading(false);
-      // notifyListeners() is already called inside _setLoading
     }
   }
   /// ===============================
@@ -407,7 +387,7 @@ class ApiProvider extends ChangeNotifier {
 
     } catch (e) {
 
-      _error = e.toString();
+      _handleException(e);
 
     } finally {
 

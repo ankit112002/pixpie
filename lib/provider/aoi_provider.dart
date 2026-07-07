@@ -28,6 +28,19 @@ class AoiProvider extends ChangeNotifier {
   bool isResubmitting(String id) => _resubmittingIds.contains(id);
   bool isDeleting(String id) => _deletingIds.contains(id);
 
+  void _handleException(dynamic e) {
+    final errorStr = e.toString().replaceAll("Exception: ", "");
+    if (errorStr.contains('SocketException') || errorStr.contains('Connection refused')) {
+      error = "Cannot connect to server. Please check your internet or try again later.";
+    } else if (errorStr.contains('TimeoutException')) {
+      error = "Connection timed out. Please try again.";
+    } else if (errorStr.contains('FormatException')) {
+      error = "Server returned an invalid response. Please try again later.";
+    } else {
+      error = errorStr;
+    }
+  }
+
   // ===============================
   // Fetch uploaded photos
   // ===============================
@@ -62,6 +75,12 @@ class AoiProvider extends ChangeNotifier {
       var response = await request.send();
       var responseData = await response.stream.bytesToString();
 
+      if (response.statusCode >= 500) {
+        error = "Server is currently undergoing maintenance. Please try again later.";
+        notifyListeners();
+        return;
+      }
+
       debugPrint("Upload response raw: $responseData");
 
       dynamic decoded;
@@ -85,7 +104,7 @@ class AoiProvider extends ChangeNotifier {
         await fetchMyUploadedPhotos(_currentAoiId!);
       }
     } catch (e) {
-      error = e.toString();
+      _handleException(e);
       debugPrint("Upload failed safely: $error");
     } finally {
       isUploadingPhoto = false;
@@ -116,6 +135,12 @@ class AoiProvider extends ChangeNotifier {
         },
       );
 
+      if (response.statusCode >= 500) {
+        error = "Server is currently undergoing maintenance. Please try again later.";
+        notifyListeners();
+        return;
+      }
+
       dynamic data;
       try {
         data = jsonDecode(response.body);
@@ -136,7 +161,7 @@ class AoiProvider extends ChangeNotifier {
 
       debugPrint("Fetched myPhotos safely: ${myPhotos.length}");
     } catch (e) {
-      error = e.toString();
+      _handleException(e);
     } finally {
       isFetchingPhotos = false;
       notifyListeners();
@@ -155,7 +180,7 @@ class AoiProvider extends ChangeNotifier {
       await _api.resubmitPhoto(photoId);
       await fetchMyUploadedPhotos(_currentAoiId!);
     } catch (e) {
-      error = e.toString();
+      _handleException(e);
     } finally {
       _resubmittingIds.remove(photoId);
       notifyListeners();
@@ -173,7 +198,7 @@ class AoiProvider extends ChangeNotifier {
       await _api.deletePhoto(photoId);
       myPhotos.removeWhere((p) => p['id'].toString() == photoId);
     } catch (e) {
-      error = e.toString();
+      _handleException(e);
     } finally {
       _deletingIds.remove(photoId);
       notifyListeners();
@@ -192,7 +217,7 @@ class AoiProvider extends ChangeNotifier {
       await apiProvider.getAoi();
       error = null;
     } catch (e) {
-      error = e.toString();
+      _handleException(e);
     } finally {
       isStartingAoi = false;
       notifyListeners();
@@ -218,12 +243,16 @@ class AoiProvider extends ChangeNotifier {
         },
       );
 
+      if (response.statusCode >= 500) {
+        throw "Server is currently undergoing maintenance. Please try again later.";
+      }
+
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw jsonDecode(response.body)["message"] ?? "Failed to submit AOI";
       }
 
     } catch (e) {
-      error = e.toString();
+      _handleException(e);
     } finally {
       isSubmittingAoi = false;
       notifyListeners();

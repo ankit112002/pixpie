@@ -58,6 +58,8 @@ class _AdminLoginState extends State<AdminLogin> {
   }
 
   void _showMessage(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(text),
@@ -158,11 +160,11 @@ class _AdminLoginState extends State<AdminLogin> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
-    return Consumer<ApiProvider>(
-      builder: (context, apiProvider, child) {
-        return Scaffold(
-          backgroundColor: const Color(0xFFF4F7FB),
-          body: SafeArea(
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FB),
+      body: Consumer<ApiProvider>(
+        builder: (context, apiProvider, child) {
+          return SafeArea(
             child: Stack(
               children: [
                 /// TOP PURPLE BACKGROUND
@@ -195,7 +197,7 @@ class _AdminLoginState extends State<AdminLogin> {
                     width: 140,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withAlpha(20),
                     ),
                   ),
                 ),
@@ -208,7 +210,7 @@ class _AdminLoginState extends State<AdminLogin> {
                     width: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withAlpha(12),
                     ),
                   ),
                 ),
@@ -229,7 +231,7 @@ class _AdminLoginState extends State<AdminLogin> {
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
+                              color: Colors.black.withAlpha(38),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
                             ),
@@ -259,7 +261,7 @@ class _AdminLoginState extends State<AdminLogin> {
                         "Login to continue to PixPe",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.85),
+                          color: Colors.white.withAlpha(216),
                           fontSize: 14,
                         ),
                       ),
@@ -274,7 +276,7 @@ class _AdminLoginState extends State<AdminLogin> {
                           borderRadius: BorderRadius.circular(32),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
+                              color: Colors.black.withAlpha(20),
                               blurRadius: 30,
                               offset: const Offset(0, 10),
                             ),
@@ -288,23 +290,20 @@ class _AdminLoginState extends State<AdminLogin> {
                               hint: "Email Address",
                               icon: Icons.email_outlined,
                               focusNode: emailFocus,
-                              keyboardType:
-                              TextInputType.emailAddress,
+                              keyboardType: TextInputType.emailAddress,
                             ),
 
                             /// PASSWORD
                             _buildTextField(
                               controller: passwordController,
                               hint: "Password",
-                              icon:
-                              Icons.lock_outline_rounded,
+                              icon: Icons.lock_outline_rounded,
                               focusNode: passwordFocus,
                               isPassword: true,
                               isVisible: _passwordVisible,
                               onToggle: () {
                                 setState(() {
-                                  _passwordVisible =
-                                  !_passwordVisible;
+                                  _passwordVisible = !_passwordVisible;
                                 });
                               },
                             ),
@@ -320,8 +319,7 @@ class _AdminLoginState extends State<AdminLogin> {
                                   "Forgot Password?",
                                   style: TextStyle(
                                     color: Color(0xFF7C3AED),
-                                    fontWeight:
-                                    FontWeight.w600,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -334,58 +332,50 @@ class _AdminLoginState extends State<AdminLogin> {
                               width: double.infinity,
                               height: 58,
                               child: ElevatedButton(
-                                onPressed:
-                                apiProvider.isLoading
+                                onPressed: apiProvider.isLoading
                                     ? null
                                     : () => _handleLogin(
-                                  apiProvider,
-                                ),
+                                          apiProvider,
+                                        ),
                                 style: ElevatedButton.styleFrom(
                                   elevation: 0,
-                                  backgroundColor:
-                                  const Color(
+                                  backgroundColor: const Color(
                                     0xFF7C3AED,
                                   ),
-                                  shape:
-                                  RoundedRectangleBorder(
-                                    borderRadius:
-                                    BorderRadius.circular(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
                                       18,
                                     ),
                                   ),
                                 ),
                                 child: apiProvider.isLoading
                                     ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child:
-                                  CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.white,
-                                  ),
-                                )
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          color: Colors.white,
+                                        ),
+                                      )
                                     : const Text(
-                                  "Login",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight:
-                                    FontWeight.w700,
-                                  ),
-                                ),
+                                        "Login",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
                               ),
                             ),
 
                             if (apiProvider.error != null)
                               Padding(
-                                padding:
-                                const EdgeInsets.only(
+                                padding: const EdgeInsets.only(
                                   top: 16,
                                 ),
                                 child: Text(
                                   apiProvider.error!,
-                                  textAlign:
-                                  TextAlign.center,
+                                  textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     color: Colors.red,
                                     fontSize: 13,
@@ -397,35 +387,33 @@ class _AdminLoginState extends State<AdminLogin> {
 
                             /// SIGNUP
                             Row(
-                              mainAxisAlignment:
-                              MainAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
                                   "Don't have an account?",
                                   style: TextStyle(
-                                    color:
-                                    Colors.grey.shade700,
+                                    color: Colors.grey.shade700,
                                     fontSize: 14,
                                   ),
                                 ),
                                 TextButton(
                                   onPressed: () {
-                                    Navigator
-                                        .pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                        const AdminSignup(),
-                                      ),
-                                    );
+                                    if (!mounted) return;
+                                    Future.delayed(Duration.zero, () {
+                                      if (!mounted) return;
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const AdminSignup(),
+                                        ),
+                                      );
+                                    });
                                   },
                                   child: const Text(
                                     "Sign Up",
                                     style: TextStyle(
-                                      color:
-                                      Color(0xFF7C3AED),
-                                      fontWeight:
-                                      FontWeight.bold,
+                                      color: Color(0xFF7C3AED),
+                                      fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -442,9 +430,9 @@ class _AdminLoginState extends State<AdminLogin> {
                 ),
               ],
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

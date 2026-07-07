@@ -5,6 +5,15 @@ import '../app_preferences.dart';
 import '../dashboard/admin_dashboard/dashboard.dart';
 import 'admin_login.dart';
 
+/// Same palette used across the app (dashboard, drawer, profile, AOIs, etc.)
+/// so the splash screen introduces the same brand identity the rest of the
+/// app carries through.
+class _Palette {
+  static const primary = Color(0xFF4B2FBF);
+  static const primaryDark = Color(0xFF2A1B5C);
+  static const primaryDeepest = Color(0xFF1B1140);
+}
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -59,7 +68,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
-    /// ❌ No token → Login
+    /// ? No token ? Login
     if (token == null || token.isEmpty) {
       Navigator.pushReplacement(
         context,
@@ -70,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen>
       return;
     }
 
-    /// ✅ Token exists → Dashboard
+    /// ? Token exists ? Dashboard
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -93,9 +102,9 @@ class _SplashScreenState extends State<SplashScreen>
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Color(0xFF111827),
-              Color(0xFF1F2937),
-              Color(0xFF374151),
+              _Palette.primaryDeepest,
+              _Palette.primaryDark,
+              _Palette.primary,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -113,7 +122,7 @@ class _SplashScreenState extends State<SplashScreen>
                   width: 220,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withOpacity(0.06),
                   ),
                 ),
               ),
@@ -126,7 +135,7 @@ class _SplashScreenState extends State<SplashScreen>
                   width: 260,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.04),
+                    color: Colors.white.withOpacity(0.05),
                   ),
                 ),
               ),
@@ -149,13 +158,24 @@ class _SplashScreenState extends State<SplashScreen>
                             borderRadius: BorderRadius.circular(28),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
+                                color: Colors.black.withOpacity(0.25),
+                                blurRadius: 24,
+                                offset: const Offset(0, 12),
                               ),
                             ],
                           ),
-                          child: Image.asset("assets/pixpe_logo.png")
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(28),
+                            child: Image.asset(
+                              "assets/pixpe_logo.png",
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.map_rounded,
+                                size: 48,
+                                color: _Palette.primary,
+                              ),
+                            ),
+                          ),
                         ),
 
                         const SizedBox(height: 28),

@@ -13,6 +13,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../provider/aoi_provider.dart';
 import 'image_crop_screen.dart';
 
+/// Same palette used across the app (dashboard, drawer, profile, AOIs, etc.)
+/// so every screen reads as one cohesive, professional design system.
+class _Palette {
+  static const primary = Color(0xFF4B2FBF);
+  static const primaryDark = Color(0xFF37217F);
+  static const textPrimary = Color(0xFF1D1B2E);
+  static const textSecondary = Color(0xFF6E6B80);
+
+  static const success = Color(0xFF1FA971);
+  static const danger = Color(0xFFD7263D);
+  static const info = Color(0xFF2E86DE);
+  static const disabled = Color(0xFF9E9E9E);
+}
+
 class SurveyMapScreen extends StatefulWidget {
   final Map<String, dynamic> aoi;
   final List<Map<String, dynamic>> pois;
@@ -43,6 +57,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
 
   bool _isFollowingUser = true;
   bool _isUploading = false;
+  bool _isPickingImage = false;
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -144,8 +159,8 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
           polygonId: const PolygonId("aoi"),
           points: points,
           strokeWidth: 3,
-          strokeColor: Colors.blue,
-          fillColor: Colors.blue.withOpacity(0.2),
+          strokeColor: _Palette.primary,
+          fillColor: _Palette.primary.withOpacity(0.15),
         ),
       );
     });
@@ -158,13 +173,22 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
       context: context,
       backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (_) => SizedBox(
         height: 400,
         child: Column(
           children: [
             const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
             const Text(
               "Captured Photo",
               style: TextStyle(
@@ -248,10 +272,10 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
     if (!isInside && !_hasShownOutsideAoiMessage) {
       _hasShownOutsideAoiMessage = true;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("⚠ You are outside assigned AOI!"),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content: const Text("? You are outside assigned AOI!"),
+          backgroundColor: _Palette.danger,
+          duration: const Duration(seconds: 3),
         ),
       );
     }
@@ -283,34 +307,40 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
   Future<void> _capturePhoto() async {
     if (!_isInsideAoi) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("You must be inside AOI to capture photo"),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text("You must be inside AOI to capture photo"),
+          backgroundColor: _Palette.danger,
         ),
       );
       return;
     }
 
-    final XFile? photo = await _picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 100,
-    );
+    if (_isPickingImage || _isUploading) return;
 
-    if (photo == null) return;
-
-    File originalFile = File(photo.path);
-
-    if (!await originalFile.exists()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Captured file does not exist"),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    setState(() => _isPickingImage = true);
 
     try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 50,
+        maxWidth: 1280,
+        maxHeight: 1280,
+      );
+
+      if (photo == null) return;
+
+      File originalFile = File(photo.path);
+
+      if (!await originalFile.exists()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("Captured file does not exist"),
+            backgroundColor: _Palette.danger,
+          ),
+        );
+        return;
+      }
+
       /// Open crop screen
       Uint8List imageBytes = await originalFile.readAsBytes();
 
@@ -391,6 +421,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Photo $_photoCount uploaded successfully ✅"),
+          backgroundColor: _Palette.success,
         ),
       );
     } catch (e) {
@@ -400,9 +431,13 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Photo upload failed: $e"),
-          backgroundColor: Colors.red,
+          backgroundColor: _Palette.danger,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isPickingImage = false);
+      }
     }
   }
 
@@ -432,13 +467,32 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
 
   /// ===============================
   /// Build UI
+  DateTime _lastCameraMove = DateTime.now();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Survey Mode")),
+      appBar: AppBar(
+        title: const Text(
+          "Survey Mode",
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 19),
+        ),
+        backgroundColor: _Palette.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [_Palette.primary, _Palette.primaryDark],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+      ),
       body: Stack(
         children: [
-          /// ── Map ──────────────────────────────────────────
+          /// Map
           GoogleMap(
             initialCameraPosition: CameraPosition(
               target: _polygons.isNotEmpty
@@ -452,6 +506,10 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
             onCameraMove: (pos) {
+              final now = DateTime.now();
+              if (now.difference(_lastCameraMove).inMilliseconds < 100) return;
+              _lastCameraMove = now;
+
               final center = pos.target;
               _currentLocation = center;
               _currentLatitude = center.latitude;
@@ -475,7 +533,47 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
             },
           ),
 
-          /// ── Capture button ───────────────────────────────
+          /// AOI status banner
+          Positioned(
+            top: 20,
+            left: 20,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: (_isInsideAoi ? _Palette.success : _Palette.danger)
+                    .withOpacity(0.92),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _isInsideAoi ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                    size: 15,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _isInsideAoi ? "Inside AOI" : "Outside AOI",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          /// Capture button
           Positioned(
             bottom: 60,
             left: 24,
@@ -488,24 +586,40 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
                   borderRadius: BorderRadius.circular(18),
                   gradient: LinearGradient(
                     colors: (_isInsideAoi && !_isUploading)
-                        ? const [Color(0xFF2563EB), Color(0xFF1D4ED8)]
-                        : const [Color(0xFFB0B0B0), Color(0xFF9E9E9E)],
+                        ? const [_Palette.primary, _Palette.primaryDark]
+                        : [_Palette.disabled, _Palette.disabled.withOpacity(0.85)],
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_isInsideAoi && !_isUploading)
+                          ? _Palette.primary.withOpacity(0.35)
+                          : Colors.black.withOpacity(0.15),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
                 ),
                 child: const Center(
-                  child: Text(
-                    "Capture Photo",
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.camera_alt_rounded, color: Colors.white, size: 20),
+                      SizedBox(width: 10),
+                      Text(
+                        "Capture Photo",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
           ),
 
-          /// ── Photo counter ────────────────────────────────
+          /// Photo counter
           Positioned(
             top: 20,
             right: 20,
@@ -515,26 +629,34 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
               decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.7),
                   borderRadius: BorderRadius.circular(20)),
-              child: Text(
-                "Photos: $_photoCount",
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 15),
+                  const SizedBox(width: 6),
+                  Text(
+                    "$_photoCount",
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
             ),
           ),
 
-          /// ── My location FAB ──────────────────────────────
+          /// My location FAB
           Positioned(
             bottom: 140,
             right: 20,
             child: FloatingActionButton(
               backgroundColor: Colors.white,
+              elevation: 4,
               onPressed: _goToCurrentLocation,
-              child: const Icon(Icons.my_location, color: Colors.blue),
+              child: const Icon(Icons.my_location_rounded, color: _Palette.primary),
             ),
           ),
 
-          /// ── Upload loading overlay ───────────────────────
+          /// Upload loading overlay
           if (_isUploading)
             Container(
               color: Colors.black.withOpacity(0.5),
@@ -562,7 +684,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
                         child: CircularProgressIndicator(
                           strokeWidth: 3,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xFF2563EB)),
+                              _Palette.primary),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -571,7 +693,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1E293B),
+                          color: _Palette.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -617,15 +739,15 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
   }
 
   Future<File> _compressImage(File file) async {
-    final result = await FlutterImageCompress.compressWithFile(
+    final String targetPath = '${file.path}_compressed.jpg';
+    final result = await FlutterImageCompress.compressAndGetFile(
       file.absolute.path,
-      quality: 75,
+      targetPath,
+      quality: 70,
       minWidth: 1024,
       minHeight: 1024,
       format: CompressFormat.jpeg,
     );
-    final compressedFile = File('${file.path}_compressed.jpg')
-      ..writeAsBytesSync(result!);
-    return compressedFile;
+    return File(result!.path);
   }
 }

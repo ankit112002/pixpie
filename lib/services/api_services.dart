@@ -45,7 +45,11 @@ class ApiServices {
       throw SessionExpiredException();
     }
 
-    throw Exception(body["message"] ?? "Something went wrong");
+    if (response.statusCode >= 500) {
+      throw Exception("Server is currently undergoing maintenance. Please try again later.");
+    }
+
+    throw Exception(body["message"] ?? "Request failed with status: ${response.statusCode}");
   }
 
   // ==============================
