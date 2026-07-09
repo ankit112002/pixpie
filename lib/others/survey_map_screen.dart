@@ -66,6 +66,26 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
     _loadPolygon();
     _startTracking();
     _loadSavedPhotos();
+    _retrieveLostData();
+  }
+
+  /// ===============================
+  /// Handle recovered data if activity was killed
+  Future<void> _retrieveLostData() async {
+    final LostDataResponse response = await _picker.retrieveLostData();
+    if (response.isEmpty) return;
+
+    if (response.file != null) {
+      // If we have a lost file, we can't easily trigger the whole flow 
+      // because we might not have the correct GPS coordinates anymore 
+      // since the activity restarted. 
+      // But we can at least try to process it if we have some location.
+      if (_currentLatitude != 0.0 && _currentLongitude != 0.0) {
+        _processCapturedPhoto(File(response.file!.path));
+      }
+    } else if (response.exception != null) {
+      debugPrint("LostData error: ${response.exception!.code}");
+    }
   }
 
   /// ===============================
@@ -329,20 +349,41 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
 
       if (photo == null) return;
 
-      File originalFile = File(photo.path);
-
-      if (!await originalFile.exists()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text("Captured file does not exist"),
-            backgroundColor: _Palette.danger,
-          ),
-        );
-        return;
+      await _processCapturedPhoto(File(photo.path));
+    } catch (e) {
+      debugPrint("Photo capture failed: $e");
+    } finally {
+      if (mounted) {
+        setState(() => _isPickingImage = false);
       }
+    }
+  }
 
+  /// Centralized processing to handle both normal capture and retrieveLostData
+  Future<void> _processCapturedPhoto(File originalFile) async {
+    if (!await originalFile.exists()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Captured file does not exist"),
+          backgroundColor: _Palette.danger,
+        ),
+      );
+      return;
+    }
+
+    try {
       /// Open crop screen
-      Uint8List imageBytes = await originalFile.readAsBytes();
+      // ✅ Recommended Code Change 1: Memory Optimization
+      // Compress the image before loading it into RAM for the cropper.
+      final result = await FlutterImageCompress.compressWithFile(
+        originalFile.absolute.path,
+        quality: 60,
+        minWidth: 1024,
+        minHeight: 1024,
+      );
+
+      if (result == null) throw "Compression failed";
+      Uint8List imageBytes = result;
 
       Uint8List? croppedImage = await Navigator.push(
         context,
@@ -354,7 +395,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
       if (croppedImage == null) return;
 
       /// Save cropped file
-      final croppedFile = File('${photo.path}_cropped.png');
+      final croppedFile = File('${originalFile.path}_cropped.png');
       await croppedFile.writeAsBytes(croppedImage);
 
       /// Compress image
@@ -425,7 +466,7 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
         ),
       );
     } catch (e) {
-      debugPrint("Photo upload failed safely: $e");
+      debugPrint("Photo processing failed: $e");
       setState(() => _isUploading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -434,10 +475,6 @@ class _SurveyMapScreenState extends State<SurveyMapScreen> {
           backgroundColor: _Palette.danger,
         ),
       );
-    } finally {
-      if (mounted) {
-        setState(() => _isPickingImage = false);
-      }
     }
   }
 
